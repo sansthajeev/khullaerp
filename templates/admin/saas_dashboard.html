@@ -1,0 +1,114 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}SaaS Management | ERP Neponbiz{% endblock %}
+
+{% block admin_content %}
+<div class="mb-4">
+    <h1 class="fw-bold h2">System Overview</h1>
+    <p class="text-muted">Manage your ERP platform and tenant companies from here.</p>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Platform Stats -->
+    <div class="col-md-6 col-lg-3">
+        <div class="card card-stats p-4 bg-white border-0 shadow-sm rounded-4">
+            <div class="d-flex justify-content-between mb-3">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2">
+                    <i class="bi bi-buildings h4 mb-0"></i>
+                </div>
+            </div>
+            <p class="text-muted small mb-1">Total Tenants</p>
+            <h3 class="fw-bold mb-0" id="tenantCount">{{ tenant_count }}</h3>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3">
+        <div class="card card-stats p-4 bg-white border-0 shadow-sm rounded-4">
+            <div class="d-flex justify-content-between mb-3">
+                <div class="bg-success bg-opacity-10 text-success rounded-circle p-2">
+                    <i class="bi bi-hdd-network h4 mb-0"></i>
+                </div>
+                <div class="text-success small fw-bold">99.9%</div>
+            </div>
+            <p class="text-muted small mb-1">System Health</p>
+            <h3 class="fw-bold mb-0">Healthy</h3>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-3">
+        <div class="card card-stats p-4 bg-white border-0 shadow-sm rounded-4">
+            <div class="d-flex justify-content-between mb-3">
+                <div class="bg-info bg-opacity-10 text-info rounded-circle p-2">
+                    <i class="bi bi-people h4 mb-0"></i>
+                </div>
+            </div>
+            <p class="text-muted small mb-1">Total Product Users</p>
+            <h3 class="fw-bold mb-0">--</h3>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-3">
+        <div class="card card-stats p-4 bg-white border-0 shadow-sm rounded-4">
+            <div class="d-flex justify-content-between mb-3">
+                <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-2">
+                    <i class="bi bi-cpu h4 mb-0"></i>
+                </div>
+            </div>
+            <p class="text-muted small mb-1">DB Connections</p>
+            <h3 class="fw-bold mb-0">Active</h3>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm p-4 rounded-4 bg-white h-100">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="fw-bold mb-0">Tenant Provisioning Status</h5>
+                <a href="{% url 'customers:client_list' %}" class="btn btn-light btn-sm text-primary fw-bold">Manage All</a>
+            </div>
+            <div class="alert alert-info border-0 small">
+                <i class="bi bi-info-circle-fill me-2"></i> This dashboard shows platform-level metrics. Go to a tenant's domain to see their accounting/inventory data.
+            </div>
+            
+            <div class="p-5 text-center bg-light rounded-4 mt-3">
+                <i class="bi bi-graph-up-arrow h1 text-muted opacity-25 d-block mb-3"></i>
+                <p class="text-muted">Platform analytics will appear here as you add more tenants.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm p-4 rounded-4 bg-white">
+            <h5 class="fw-bold mb-4">SaaS Actions</h5>
+            <div class="d-grid gap-3">
+                <a href="{% url 'customers:client_create' %}" class="btn btn-primary d-flex align-items-center justify-content-center py-2">
+                    <i class="bi bi-plus-circle me-2"></i> Provision New Tenant
+                </a>
+                <button class="btn btn-outline-secondary d-flex align-items-center justify-content-center py-2 border-dashed">
+                    <i class="bi bi-database-down me-2"></i> Global DB Backup
+                </button>
+                <button class="btn btn-outline-secondary d-flex align-items-center justify-content-center py-2 border-dashed">
+                    <i class="bi bi-envelope-at me-2"></i> Broadcast Notice
+                </button>
+            </div>
+            
+            <hr class="my-4">
+            
+            <h6 class="fw-bold mb-3">Super Admin Info</h6>
+            <div class="bg-dark bg-opacity-10 p-3 rounded-3">
+                <p class="mb-1 small text-muted">Current Host</p>
+                <p class="mb-0 fw-bold font-monospace small">{{ request.get_host }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    // Simple script to set tenant count (passed from view or fetched)
+    // For now, static or simple logic
+</script>
+{% endblock %}

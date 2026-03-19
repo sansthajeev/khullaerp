@@ -1,0 +1,57 @@
+{% extends 'admin/base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}Add User to {{ client.name }} | ERP Neponbiz{% endblock %}
+
+{% block admin_content %}
+<div class="mb-4">
+    <h2 class="fw-bold mb-1">Add User: {{ client.name }}</h2>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'users:dashboard' %}" class="text-decoration-none">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'customers:client_list' %}" class="text-decoration-none">Companies</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'customers:tenant_user_list' client.pk %}" class="text-decoration-none">Users</a></li>
+            <li class="breadcrumb-item active" aria-current="page">New User</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+            <h5 class="fw-bold mb-4">Account Information</h5>
+            <form method="post">
+                {% csrf_token %}
+                {% bootstrap_form form %}
+                
+                <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+                    <a href="{% url 'customers:tenant_user_list' client.pk %}" class="btn btn-light px-4">Cancel</a>
+                    <button type="submit" class="btn btn-primary px-5">Create User Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="bg-primary bg-opacity-10 rounded-4 p-4 h-100">
+            <h5 class="fw-bold mb-3 text-primary"><i class="bi bi-info-circle me-2"></i> Tenant Schema Context</h5>
+            <p class="small text-muted mb-4">You are creating a user account that will exist <strong>only</strong> within the <code>{{ client.schema_name }}</code> schema.</p>
+            
+            <ul class="small text-muted ps-0 list-unstyled">
+                <li class="mb-3 d-flex align-items-start">
+                    <i class="bi bi-shield-lock-fill text-primary me-2 mt-1"></i>
+                    <span><strong>Data Isolation:</strong> This user will not be able to log in to the public portal or other tenants unless explicitly registered there.</span>
+                </li>
+                <li class="mb-3 d-flex align-items-start">
+                    <i class="bi bi-globe2 text-primary me-2 mt-1"></i>
+                    <span><strong>Authentication:</strong> The user should log in via this company's dedicated domain: <code>{{ client.domains.first.domain }}</code>.</span>
+                </li>
+            </ul>
+            
+            <div class="alert alert-info border-0 small mt-4">
+                <strong>Super Admin Tip:</strong> Once created, you can manage this user's permissions by switching to the tenant's domain as an administrator.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

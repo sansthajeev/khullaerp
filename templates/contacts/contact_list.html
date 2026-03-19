@@ -1,0 +1,101 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Contacts | ERP Neponbiz{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Contacts</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'users:dashboard' %}" class="text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Contacts</li>
+            </ol>
+        </nav>
+    </div>
+    <a href="{% url 'contacts:contact_create' %}" class="btn btn-primary d-flex align-items-center justify-content-center">
+        <i class="bi bi-person-plus me-2"></i> Add New Contact
+    </a>
+</div>
+
+<div x-data="{ search: '' }">
+<div class="row g-3 mb-4">
+    <div class="col-md-8">
+        <form method="get" class="d-flex gap-2">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-0 shadow-sm ps-3">
+                    <i class="bi bi-search text-muted"></i>
+                </span>
+                <input type="text" name="q" class="form-control border-0 shadow-sm ps-0 py-2" placeholder="Search by name, code, email, or PAN..." value="{{ query|default:'' }}" x-model="search">
+            </div>
+            <button type="submit" class="btn btn-primary px-4">Search</button>
+            {% if query or current_type %}
+                <a href="{% url 'contacts:contact_list' %}" class="btn btn-light shadow-sm">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+    <div class="col-md-4">
+        <div class="btn-group w-100 shadow-sm rounded-3 overflow-hidden">
+            <a href="?type=Customer{% if query %}&q={{ query }}{% endif %}" class="btn {% if current_type == 'Customer' %}btn-primary{% else %}btn-white bg-white{% endif %} border-0 py-2 small">Customers</a>
+            <a href="?type=Supplier{% if query %}&q={{ query }}{% endif %}" class="btn {% if current_type == 'Supplier' %}btn-primary{% else %}btn-white bg-white{% endif %} border-0 py-2 small">Suppliers</a>
+            <a href="?{% if query %}q={{ query }}{% endif %}" class="btn {% if not current_type %}btn-primary{% else %}btn-white bg-white{% endif %} border-0 py-2 small">All</a>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4 border-0">Code</th>
+                    <th class="border-0">Contact Name</th>
+                    <th class="border-0 text-center">Type</th>
+                    <th class="border-0 text-center">PAN/VAT</th>
+                    <th class="border-0 text-center">Phone</th>
+                    <th class="pe-4 border-0 text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contact in contacts %}
+                <tr x-show="search === '' || $el.innerText.toLowerCase().includes(search.toLowerCase())">
+                    <td class="ps-4">
+                        <span class="badge bg-light text-dark font-monospace">{{ contact.code|default:"--" }}</span>
+                    </td>
+                    <td>
+                        <div class="fw-bold text-dark">{{ contact.name }}</div>
+                        <div class="small text-muted">{{ contact.email|default:"No email" }}</div>
+                    </td>
+                    <td class="text-center">
+                        {% if contact.contact_type == 'Customer' %}
+                        <span class="badge bg-primary bg-opacity-10 text-primary">Customer</span>
+                        {% elif contact.contact_type == 'Supplier' %}
+                        <span class="badge bg-warning bg-opacity-10 text-warning">Supplier</span>
+                        {% else %}
+                        <span class="badge bg-info bg-opacity-10 text-info">Both</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center"><code>{{ contact.pan_vat_number|default:"--" }}</code></td>
+                    <td class="text-center">{{ contact.phone|default:"--" }}</td>
+                    <td class="pe-4 text-end">
+                        <a href="{% url 'contacts:contact_edit' contact.pk %}" class="btn btn-sm btn-light border-0">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-5">
+                        <div class="py-4">
+                            <i class="bi bi-people h1 text-muted opacity-25 mb-3 d-block"></i>
+                            <p class="text-muted">No contacts found.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+{% endblock %}

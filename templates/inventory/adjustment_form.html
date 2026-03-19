@@ -1,0 +1,75 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Stock Adjustment | ERP Neponbiz{% endblock %}
+
+{% block admin_content %}
+<div class="mb-4">
+    <h2 class="fw-bold mb-1">New Stock Adjustment</h2>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'users:dashboard' %}" class="text-decoration-none">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'inventory:item_list' %}" class="text-decoration-none">Inventory</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'inventory:adjustment_list' %}" class="text-decoration-none">Adjustments</a></li>
+            <li class="breadcrumb-item active" aria-current="page">New</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
+            <form method="post">
+                {% csrf_token %}
+                <div class="row g-4">
+                    <div class="col-12">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Select Item</label>
+                        {{ form.item }}
+                        {% if form.item.errors %}<div class="text-danger small mt-1">{{ form.item.errors }}</div>{% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Adjustment Type</label>
+                        {{ form.adjustment_type }}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Quantity</label>
+                        {{ form.quantity }}
+                        {% if form.quantity.errors %}<div class="text-danger small mt-1">{{ form.quantity.errors }}</div>{% endif %}
+                    </div>
+                    
+                    <div class="col-12">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Reason / Remarks</label>
+                        {{ form.reason }}
+                    </div>
+                    
+                    <div class="col-12 mt-4">
+                        <hr class="my-4">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'inventory:adjustment_list' %}" class="btn btn-light px-4">Cancel</a>
+                            <button type="submit" class="btn btn-primary px-5">Submit Adjustment</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="bg-light rounded-4 p-4">
+            <h5 class="fw-bold mb-3"><i class="bi bi-info-circle me-2"></i> How it works</h5>
+            <ul class="small text-muted ps-3">
+                <li class="mb-2"><strong>Addition</strong>: Increases the current stock level of the item. Use for stock counts discovery.</li>
+                <li class="mb-2"><strong>Reduction</strong>: Decreases the current stock level. Use for internal usage.</li>
+                <li class="mb-2"><strong>Breakage</strong>: Decreases the current stock level. Specifically for damaged items.</li>
+                <li><strong>Atomic Sync</strong>: The item's <code>Current Stock</code> balance is updated immediately upon submission.</li>
+            </ul>
+            
+            <div class="alert alert-warning border-0 small mt-4">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong>Note:</strong> Adjustments made here are manual and do not generate accounting Vouchers. Use Sales or Purchase modules for financial transactions.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

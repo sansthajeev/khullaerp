@@ -1,0 +1,128 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}{{ title }} | ERP Neponbiz{% endblock %}
+
+{% block admin_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="glass-card rounded-5 border-0 shadow-sm overflow-hidden mb-5">
+            <div class="p-4 p-md-5 border-bottom bg-white bg-opacity-70 d-flex align-items-center gap-4">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-4 p-3 d-flex align-items-center justify-content-center shadow-sm d-none d-sm-flex" style="width: 70px; height: 70px;">
+                    <i class="bi bi-shield-lock display-5"></i>
+                </div>
+                <div>
+                    <h3 class="fw-black text-dark mb-1">{{ title }}</h3>
+                    <p class="text-muted small mb-0 font-inter">Define the module-level permissions for this staff role.</p>
+                </div>
+            </div>
+
+            <div class="p-4 p-md-5">
+                <form method="POST" class="needs-validation">
+                    {% csrf_token %}
+                    
+                    <!-- SECTION 1: ROLE IDENTITY -->
+                    <div class="mb-5">
+                        <div class="d-flex align-items-center mb-4">
+                            <span class="badge bg-primary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">1</span>
+                            <h5 class="fw-bold text-dark mb-0">Role Identity</h5>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-md-12">
+                                <label class="form-label extra-small text-uppercase fw-bold text-muted letter-spacing-1 mb-2">Role Name</label>
+                                <div class="input-group-premium">
+                                    {{ form.name }}
+                                </div>
+                                {% if form.name.errors %}
+                                    <div class="text-danger extra-small mt-2 px-1">
+                                        {% for error in form.name.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label extra-small text-uppercase fw-bold text-muted letter-spacing-1 mb-2">Description</label>
+                                <div class="input-group-premium">
+                                    {{ form.description }}
+                                </div>
+                                {% if form.description.errors %}
+                                    <div class="text-danger extra-small mt-2 px-1">
+                                        {% for error in form.description.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 2: PERMISSIONS -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-4">
+                            <span class="badge bg-primary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">2</span>
+                            <h5 class="fw-bold text-dark mb-0">Module Access Controls</h5>
+                        </div>
+                        
+                        <div class="permission-grid py-2">
+                            {% for field in form %}
+                                {% if "can_access" in field.name or "can_manage" in field.name %}
+                                <div class="permission-item transition-all p-3 border rounded-4 bg-light bg-opacity-25 mb-3 hover-border-primary d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <label class="fw-bold text-dark mb-0 cursor-pointer" for="{{ field.id_for_label }}">
+                                            {% if "accounting" in field.name %}<i class="bi bi-journal-text me-2 text-primary"></i>Accounting Module
+                                            {% elif "inventory" in field.name %}<i class="bi bi-box-seam me-2 text-primary"></i>Inventory Module
+                                            {% elif "sales" in field.name %}<i class="bi bi-cart me-2 text-primary"></i>Sales & POS Module
+                                            {% elif "purchases" in field.name %}<i class="bi bi-receipt me-2 text-primary"></i>Purchases Module
+                                            {% elif "hr" in field.name %}<i class="bi bi-people me-2 text-primary"></i>Human Resources
+                                            {% elif "taxation" in field.name %}<i class="bi bi-percent me-2 text-primary"></i>Taxation Module
+                                            {% elif "manage_users" in field.name %}<i class="bi bi-people-fill me-2 text-primary"></i>User Management
+                                            {% else %}{{ field.label }}{% endif %}
+                                        </label>
+                                        <p class="extra-small text-muted mb-0 mt-1">Allows viewing and modifying data within the {{ field.label|lower }}.</p>
+                                    </div>
+                                    <div class="form-check form-switch px-0">
+                                        {{ field }}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column flex-sm-row align-items-center justify-content-between mt-5 pt-4 border-top gap-3">
+                        <a href="{% url 'users:role_list' %}" class="btn btn-light px-4 py-2 rounded-4 fw-bold border order-2 order-sm-1 w-100 w-sm-auto">
+                            <i class="bi bi-arrow-left me-2"></i> Back to List
+                        </a>
+                        <button type="submit" class="btn btn-premium-primary px-5 py-3 rounded-4 fw-black order-1 order-sm-2 w-100 w-sm-auto">
+                            <i class="bi bi-check-circle-fill me-2"></i> SAVE ROLE DEFINITION
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .permission-item:hover {
+        background-color: white !important;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        transform: translateY(-2px);
+    }
+    .hover-border-primary:hover {
+        border-color: var(--brand-color) !important;
+    }
+    .form-check-input:checked {
+        background-color: var(--brand-color);
+        border-color: var(--brand-color);
+    }
+    .input-group-premium .form-control {
+        border: 2px solid #f1f5f9;
+        padding: 0.8rem 1.2rem;
+        border-radius: 14px !important;
+        font-weight: 500;
+        box-shadow: none;
+        transition: all 0.3s ease;
+    }
+    .input-group-premium .form-control:focus {
+        border-color: var(--brand-color);
+        background-color: white;
+    }
+</style>
+{% endblock %}

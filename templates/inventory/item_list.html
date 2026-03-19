@@ -1,0 +1,140 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Stock Items | ERP Neponbiz{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Stock Items</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'users:dashboard' %}" class="text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Inventory</li>
+            </ol>
+        </nav>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'inventory:item_bulk_generate_barcodes' %}" class="btn btn-outline-primary d-flex align-items-center justify-content-center">
+            <i class="bi bi-magic me-2"></i> Bulk Generate Barcodes
+        </a>
+        <a href="{% url 'inventory:item_create' %}" class="btn btn-primary d-flex align-items-center justify-content-center">
+            <i class="bi bi-plus-lg me-2"></i> New Item
+        </a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: rgba(255,255,255,0.7); backdrop-filter: blur(10px);" x-data="{ search: '' }">
+    <div class="card-header bg-transparent border-bottom border-light p-4">
+        <div class="row g-3 align-items-center">
+            <div class="col-12 col-md-6">
+                <div class="input-group bg-white rounded-pill border px-3 py-1 shadow-sm focus-within-shadow" style="max-width: 350px;">
+                    <span class="input-group-text bg-transparent border-0"><i class="bi bi-search py-1 text-muted"></i></span>
+                    <input type="text" class="form-control border-0 bg-transparent" placeholder="Search items by name or SKU..." x-model="search" style="box-shadow: none;">
+                </div>
+            </div>
+            <div class="col-12 col-md-6 text-md-end">
+                <div class="d-flex d-md-block gap-2 justify-content-end">
+                    <button class="btn btn-outline-secondary border-0 btn-sm fw-bold text-uppercase letter-spacing-1 opacity-75 me-2"><i class="bi bi-filter me-1"></i> Filter</button>
+                    <button class="btn btn-outline-secondary border-0 btn-sm fw-bold text-uppercase letter-spacing-1 opacity-75"><i class="bi bi-download me-1"></i> Export</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-borderless align-middle mb-0 coa-table">
+            <thead class="bg-light bg-opacity-50 border-bottom border-light">
+                <tr>
+                    <th class="ps-4 py-3 text-muted extra-small text-uppercase letter-spacing-1 fw-bold">Stock Item</th>
+                    <th class="py-3 text-muted extra-small text-uppercase letter-spacing-1 fw-bold">Properties</th>
+                    <th class="py-3 text-muted extra-small text-uppercase letter-spacing-1 fw-bold">Pricing</th>
+                    <th class="py-3 text-muted extra-small text-uppercase letter-spacing-1 fw-bold text-end">Current Stock</th>
+                    <th class="pe-4 py-3 text-muted extra-small text-uppercase letter-spacing-1 fw-bold text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr class="border-bottom border-light hover-bg-light transition-fast" x-show="search === '' || $el.innerText.toLowerCase().includes(search.toLowerCase())">
+                    <td class="ps-4 py-3">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                <i class="bi bi-box-seam fs-5"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark fs-6">{{ item.name }}</div>
+                                <div class="extra-small text-muted d-flex align-items-center mt-1">
+                                    <span class="bg-light px-2 py-0.5 rounded border me-2 font-monospace">{{ item.sku }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3">
+                        <div class="d-flex flex-column gap-1 align-items-start">
+                            <span class="badge bg-indigo bg-opacity-10 text-indigo fw-medium border border-indigo border-opacity-25">{{ item.uom.short_name }}</span>
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary fw-normal extra-small">{{ item.valuation_method }}</span>
+                        </div>
+                    </td>
+                    <td class="py-3">
+                        <div class="d-flex flex-column gap-1">
+                            <div class="small fw-bold text-dark"><span class="text-success opacity-75 me-1">S:</span> NPR {{ item.sales_price }}</div>
+                            <div class="extra-small text-muted"><span class="text-secondary opacity-75 me-1">P:</span> NPR {{ item.purchase_price }}</div>
+                        </div>
+                    </td>
+                    <td class="py-3 text-end">
+                        <div class="d-inline-flex flex-column align-items-end">
+                            <span class="badge rounded-pill px-3 py-2 {% if item.current_stock < 10 %}bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25{% else %}bg-success bg-opacity-10 text-success border border-success border-opacity-25{% endif %} fw-bold fs-6">
+                                {{ item.current_stock }}
+                            </span>
+                        </div>
+                    </td>
+                    <td class="pe-4 py-3 text-end">
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light border-0 text-muted hover-text-primary rounded-circle" style="width: 32px; height: 32px;" data-bs-toggle="dropdown" data-bs-boundary="viewport">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                                <li><a class="dropdown-item py-2 fw-medium text-dark" href="{% url 'inventory:item_detail' item.pk %}"><i class="bi bi-eye text-primary opacity-75 me-2"></i> View Item Detail</a></li>
+                                <li><a class="dropdown-item py-2 fw-medium text-primary" href="{% url 'inventory:item_ledger' item.pk %}"><i class="bi bi-journal-richtext text-primary opacity-75 me-2"></i> View Ledger</a></li>
+                                <li><hr class="dropdown-divider opacity-10"></li>
+                                <li><a class="dropdown-item py-2 fw-medium" href="{% url 'inventory:item_edit' item.pk %}"><i class="bi bi-pencil text-muted me-2"></i> Edit Details</a></li>
+                                <li><a class="dropdown-item py-2 fw-medium" href="{% url 'inventory:adjustment_create' %}?item={{ item.pk }}"><i class="bi bi-sliders text-muted me-2"></i> Adjust Stock</a></li>
+                                <li><hr class="dropdown-divider opacity-10"></li>
+                                <li><a class="dropdown-item py-2 fw-medium text-danger" href="{% url 'inventory:item_delete' item.pk %}"><i class="bi bi-trash text-danger opacity-75 me-2"></i> Delete Item</a></li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-5">
+                        <div class="py-5">
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 80px; height: 80px;">
+                                <i class="bi bi-box-seam" style="font-size: 2.5rem;"></i>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-2">No Items Found</h5>
+                            <p class="text-muted mb-4">Your inventory is currently empty. Add your first product or material.</p>
+                            <a href="{% url 'inventory:item_create' %}" class="btn btn-primary rounded-pill px-4 shadow-sm">
+                                <i class="bi bi-plus-lg me-2"></i> Add New Item
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if items %}
+    <div class="card-footer bg-transparent border-top border-light p-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <p class="small text-muted mb-0">Showing <strong class="text-dark">{{ items|length }}</strong> stock items</p>
+            <nav aria-label="Page navigation">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item disabled"><a class="page-item active page-link border-0 text-white bg-primary rounded-3" href="#">1</a></li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,192 @@
+{% extends 'admin/base.html' %}
+{% load humanize %}
+
+{% block title %}{{ item.name }} - Stock Ledger | ERP Neponbiz{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Stock Ledger: {{ item.name }}</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'users:dashboard' %}" class="text-decoration-none text-primary opacity-75">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'inventory:item_list' %}" class="text-decoration-none text-primary opacity-75">Inventory</a></li>
+                <li class="breadcrumb-item active text-muted" aria-current="page">{{ item.sku }}</li>
+            </ol>
+        </nav>
+    </div>
+    <div class="d-flex gap-3">
+        <a href="{% url 'inventory:item_list' %}" class="btn btn-light bg-white border shadow-sm px-4 rounded-3 fw-semibold text-dark">
+            <i class="bi bi-arrow-left me-2"></i> Back to Items
+        </a>
+        <button class="btn btn-premium-primary px-4 d-flex align-items-center justify-content-center" onclick="window.print()">
+            <i class="bi bi-printer me-2"></i> Print Ledger
+        </button>
+    </div>
+</div>
+
+<!-- Item Summary Card -->
+<div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" style="background: rgba(255,255,255,0.7); backdrop-filter: blur(10px);">
+    <div class="card-body p-4 p-md-5">
+        <div class="row g-4 align-items-center">
+            <div class="col-12 col-md-5">
+                <div class="d-flex align-items-center">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-4 d-flex align-items-center justify-content-center me-4" style="width: 60px; height: 60px;">
+                        <i class="bi bi-box-seam fs-1"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold text-dark mb-1">{{ item.name }}</h4>
+                        <div class="d-flex gap-2 align-items-center">
+                            <span class="badge bg-light text-muted border font-monospace">{{ item.sku }}</span>
+                            <span class="badge bg-indigo bg-opacity-10 text-indigo border border-indigo border-opacity-25">{{ item.uom.name }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-12 col-md-7">
+                <div class="row g-4 text-center text-md-end">
+                    <div class="col-4 border-end border-light">
+                        <div class="text-muted extra-small text-uppercase letter-spacing-1 fw-bold mb-1">Purchase Price</div>
+                        <div class="fs-5 fw-bold text-dark">NPR {{ item.purchase_price|floatformat:2|intcomma }}</div>
+                    </div>
+                    <div class="col-4 border-end border-light">
+                        <div class="text-muted extra-small text-uppercase letter-spacing-1 fw-bold mb-1">Sales Price</div>
+                        <div class="fs-5 fw-bold text-dark">NPR {{ item.sales_price|floatformat:2|intcomma }}</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-muted extra-small text-uppercase letter-spacing-1 fw-bold mb-1">Current Stock</div>
+                        <div class="fs-4 fw-black {% if item.current_stock < 10 %}text-danger{% else %}text-success{% endif %}">
+                            {{ item.current_stock|floatformat:3 }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter & Ledger Table -->
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: rgba(255,255,255,0.7); backdrop-filter: blur(10px);">
+    <div class="card-header bg-transparent border-bottom border-light p-4">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label text-muted small fw-bold">From Date</label>
+                <input type="date" name="from_date" class="form-control" value="{{ from_date|date:'Y-m-d' }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label text-muted small fw-bold">To Date</label>
+                <input type="date" name="to_date" class="form-control" value="{{ to_date|date:'Y-m-d' }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100 fw-bold">Load Ledger</button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-borderless align-middle mb-0 coa-table">
+            <thead class="bg-light bg-opacity-50 border-bottom border-light">
+                <tr>
+                    <th class="ps-4 py-3 text-muted extra-small text-uppercase letter-spacing-1 fw-bold">Date</th>
+                    <th class="py-3 text-muted extra-small text-uppercase letter-spacing-1 fw-bold">Voucher / Source</th>
+                    <th class="py-3 text-muted extra-small text-uppercase letter-spacing-1 fw-bold text-end">Inward (Qty)</th>
+                    <th class="py-3 text-muted extra-small text-uppercase letter-spacing-1 fw-bold text-end">Outward (Qty)</th>
+                    <th class="pe-4 py-3 text-muted extra-small text-uppercase letter-spacing-1 fw-bold text-end">Stock Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Opening Balance -->
+                <tr class="bg-light bg-opacity-25 border-bottom border-light">
+                    <td class="ps-4 py-3 text-muted fw-medium">{{ from_date|date:'Y-m-d' }}</td>
+                    <td class="py-3">
+                        <div class="fw-bold text-dark">Opening Balance</div>
+                        <div class="extra-small text-muted">Stock carried forward before selected period</div>
+                    </td>
+                    <td class="py-3 text-end text-muted">-</td>
+                    <td class="py-3 text-end text-muted">-</td>
+                    <td class="pe-4 py-3 text-end">
+                        <span class="fw-bold text-dark fs-6">{{ opening_qty|floatformat:3 }}</span>
+                    </td>
+                </tr>
+
+                <!-- Transactions -->
+                {% for m in movements %}
+                <tr class="border-bottom border-light hover-bg-light transition-fast">
+                    <td class="ps-4 py-3 text-dark fw-medium">{{ m.date|date:'Y-m-d' }}</td>
+                    <td class="py-3">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3 text-muted">
+                                {% if 'Purchase' in m.ref %}<i class="bi bi-box-arrow-in-right text-success"></i>
+                                {% elif 'Sales' in m.ref %}<i class="bi bi-box-arrow-right text-danger"></i>
+                                {% else %}<i class="bi bi-sliders text-warning"></i>{% endif %}
+                            </div>
+                            <div>
+                                <div class="fw-bold text-primary">{{ m.ref }}</div>
+                                <div class="extra-small text-muted">{{ m.source }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    
+                    <td class="py-3 text-end">
+                        {% if m.type == 'inward' %}
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1 fs-6">
+                                +{{ m.qty|floatformat:3 }}
+                            </span>
+                        {% else %}
+                            <span class="text-muted opacity-50">-</span>
+                        {% endif %}
+                    </td>
+                    
+                    <td class="py-3 text-end">
+                        {% if m.type == 'outward' %}
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1 fs-6">
+                                -{{ m.qty|floatformat:3 }}
+                            </span>
+                        {% else %}
+                            <span class="text-muted opacity-50">-</span>
+                        {% endif %}
+                    </td>
+                    
+                    <td class="pe-4 py-3 text-end">
+                        <span class="fw-bold text-dark fs-6">{{ m.running_qty|floatformat:3 }}</span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-5">
+                        <div class="py-3">
+                            <i class="bi bi-journal-x fs-1 text-muted opacity-25 mb-3 d-block"></i>
+                            <p class="text-muted fw-medium mb-0">No stock movements found during this period.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+
+                <!-- Closing Balance Summary -->
+                <tr class="bg-primary bg-opacity-10">
+                    <td colspan="4" class="ps-4 py-4 text-end">
+                        <span class="text-primary fw-bold text-uppercase letter-spacing-1">Closing Stock Balance:</span>
+                    </td>
+                    <td class="pe-4 py-4 text-end">
+                        <span class="fw-black text-primary fs-5 border-bottom border-primary border-2 pb-1">{{ closing_qty|floatformat:3 }}</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    @media print {
+        body * { visibility: hidden; }
+        #admin-content, #admin-content * { visibility: visible; }
+        #admin-content { position: absolute; left: 0; top: 0; width: 100%; padding: 0 !important; }
+        .btn, .breadcrumb, form button { display: none !important; }
+        .card { box-shadow: none !important; border: 1px solid #ddd !important; }
+    }
+</style>
+{% endblock %}
+{% endblock %}

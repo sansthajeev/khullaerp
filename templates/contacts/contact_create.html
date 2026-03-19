@@ -1,0 +1,79 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Add Contact | ERP Neponbiz{% endblock %}
+
+{% block admin_content %}
+<div class="mb-4">
+    <h2 class="fw-bold mb-1">Add New Contact</h2>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'users:dashboard' %}" class="text-decoration-none">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'contacts:contact_list' %}" class="text-decoration-none">Contacts</a></li>
+            <li class="breadcrumb-item active" aria-current="page">New Contact</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+            <form method="post">
+                {% csrf_token %}
+                <div class="row g-4">
+                    <div class="col-md-8">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Full Name / Company Name</label>
+                        <input type="text" name="name" class="form-control" placeholder="e.g. Rahul Enterprises" required>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Contact Type</label>
+                        <select name="contact_type" class="form-select" required>
+                            <option value="Customer">Customer</option>
+                            <option value="Supplier">Supplier</option>
+                            <option value="Both">Both</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Email Address</label>
+                        <input type="email" name="email" class="form-control" placeholder="example@email.com">
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Phone Number</label>
+                        <input type="text" name="phone" class="form-control" placeholder="98XXXXXXXX">
+                    </div>
+                    
+                    <div class="col-12">
+                        <label class="form-label fw-bold small text-muted text-uppercase">PAN/VAT Number</label>
+                        <input type="text" name="pan_vat" class="form-control" placeholder="9 digits">
+                    </div>
+                    
+                    <div class="col-12">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Address</label>
+                        <textarea name="address" class="form-control" rows="3" placeholder="Street, City, District"></textarea>
+                    </div>
+                    
+                    <div class="col-12 mt-4 pt-4 border-top">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'contacts:contact_list' %}" class="btn btn-light px-4">Cancel</a>
+                            <button type="submit" class="btn btn-primary px-5">Save Contact</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="bg-primary bg-opacity-10 rounded-4 p-4 h-100">
+            <h5 class="fw-bold mb-3"><i class="bi bi-info-circle me-2 text-primary"></i> Contact Information</h5>
+            <p class="small text-muted mb-4">Contacts are used throughout the ERP for sales, purchases, and accounting reports.</p>
+            
+            <div class="alert alert-info border-0 small">
+                <strong>PAN/VAT:</strong> Ensure the 9-digit registration number is accurate for tax invoices.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

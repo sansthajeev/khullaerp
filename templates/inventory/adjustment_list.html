@@ -1,0 +1,94 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block title %}Stock Adjustments | ERP Neponbiz{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Stock Adjustments</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'users:dashboard' %}" class="text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'inventory:item_list' %}" class="text-decoration-none">Inventory</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Adjustments</li>
+            </ol>
+        </nav>
+    </div>
+    <a href="{% url 'inventory:adjustment_create' %}" class="btn btn-primary d-flex align-items-center justify-content-center">
+        <i class="bi bi-plus-lg me-2"></i> New Adjustment
+    </a>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4" x-data="{ search: '' }">
+    <div class="card-header bg-white border-bottom p-3">
+        <div class="row g-3 align-items-center">
+            <div class="col-12 col-md-6">
+                <div class="input-group input-group-sm w-100" style="max-width: 300px;">
+                    <span class="input-group-text bg-light border-0"><i class="bi bi-search py-1 text-muted"></i></span>
+                    <input type="text" class="form-control border-0 bg-light" placeholder="Search adjustments..." x-model="search">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4 border-0">Date</th>
+                    <th class="border-0">Item</th>
+                    <th class="border-0 text-center">Type</th>
+                    <th class="border-0 text-end">Quantity</th>
+                    <th class="border-0">Reason</th>
+                    <th class="border-0">User</th>
+                    <th class="pe-4 border-0 text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for adj in adjustments %}
+                <tr x-show="search === '' || $el.innerText.toLowerCase().includes(search.toLowerCase())">
+                    <td class="ps-4">
+                        <div class="fw-bold text-dark">{{ adj.date|date:"Y-m-d" }}</div>
+                        <div class="extra-small text-muted">{{ adj.date|date:"H:i" }}</div>
+                    </td>
+                    <td>
+                        <div class="fw-bold text-dark">{{ adj.item.name }}</div>
+                        <div class="extra-small text-muted">{{ adj.item.sku }}</div>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge {% if adj.adjustment_type == 'Addition' %}bg-success{% elif adj.adjustment_type == 'Reduction' %}bg-warning{% else %}bg-danger{% endif %} bg-opacity-10 text-{% if adj.adjustment_type == 'Addition' %}success{% elif adj.adjustment_type == 'Reduction' %}warning{% else %}danger{% endif %} rounded-pill px-3">
+                            {{ adj.adjustment_type }}
+                        </span>
+                    </td>
+                    <td class="text-end fw-bold">
+                        {% if adj.adjustment_type == 'Addition' %}+{% else %}-{% endif %} {{ adj.quantity }}
+                    </td>
+                    <td class="small text-muted" title="{{ adj.reason }}">
+                        {{ adj.reason|truncatechars:30 }}
+                    </td>
+                    <td>
+                        <div class="small fw-medium">{{ adj.performed_by.username }}</div>
+                    </td>
+                    <td class="pe-4 text-end">
+                        <a href="{% url 'inventory:adjustment_delete' adj.pk %}" class="btn btn-sm btn-outline-danger border-0" title="Revert & Delete">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> Revert
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-5">
+                        <div class="py-4">
+                            <i class="bi bi-journal-text h1 text-muted opacity-25 mb-3 d-block"></i>
+                            <p class="text-muted">No stock adjustments found.</p>
+                            <a href="{% url 'inventory:adjustment_create' %}" class="btn btn-outline-primary btn-sm">Create first adjustment</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

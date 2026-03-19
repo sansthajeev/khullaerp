@@ -1,0 +1,186 @@
+{% extends 'admin/base.html' %}
+{% load nepali_dates %}
+{% load humanize %}
+
+{% block title %}Invoice: {{ invoice.invoice_number }} | ERP Neponbiz{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .invoice-container {
+        max-width: 900px;
+        margin: 0 auto;
+        background: white;
+        padding: 4rem;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    }
+    @media (max-width: 768px) {
+        .invoice-container {
+            padding: 1.5rem;
+        }
+    }
+    .invoice-header {
+        border-bottom: 2px solid #f1f5f9;
+        margin-bottom: 3rem;
+        padding-bottom: 2rem;
+    }
+    .invoice-brand {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #1e293b;
+    }
+    .invoice-label {
+        color: #64748b;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.5rem;
+    }
+    @media print {
+        .sidebar, .top-header, .btn-print-hide {
+            display: none !important;
+        }
+        .main-wrapper {
+            margin-left: 0 !important;
+            width: 100% !important;
+        }
+        .invoice-container {
+            box-shadow: none !important;
+            padding: 0 !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4 btn-print-hide">
+    <a href="{% url 'sales:invoice_list' %}" class="btn btn-light"><i class="bi bi-arrow-left me-2"></i> Back to List</a>
+    <div class="d-flex gap-2">
+        {% if invoice.status == 'Draft' %}
+        <form action="{% url 'sales:finalize_invoice' invoice.pk %}" method="post" onsubmit="return confirm('Are you sure you want to finalize this invoice? Once finalized, it will create accounting entries and cannot be edited.')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success"><i class="bi bi-check2-circle me-2"></i> Finalize Invoice</button>
+        </form>
+        {% endif %}
+        <a href="{% url 'sales:export_invoice_pdf' invoice.pk %}" class="btn btn-danger"><i class="bi bi-file-earmark-pdf me-2"></i> Download PDF</a>
+        <button onclick="window.print()" class="btn btn-outline-primary"><i class="bi bi-printer me-2"></i> Print Invoice</button>
+        {% if invoice.status == 'Draft' %}
+        <a href="{% url 'sales:invoice_edit' invoice.pk %}" class="btn btn-primary"><i class="bi bi-pencil me-2"></i> Edit Invoice</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="invoice-container">
+    <div class="text-end mb-4 btn-print-hide">
+        {% if invoice.status == 'Draft' %}
+        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-3 py-2">DRAFT DOCUMENT</span>
+        {% elif invoice.status == 'Finalized' %}
+        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2"><i class="bi bi-patch-check-fill me-1"></i> FINALIZED & POSTED</span>
+        {% else %}
+        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2">CANCELLED</span>
+        {% endif %}
+    </div>
+    
+    <div class="invoice-header d-flex flex-column flex-md-row justify-content-between align-items-start gap-4">
+        <div>
+            <div class="invoice-brand mb-2"><i class="bi bi-rocket-takeoff-fill text-primary"></i> Neponbiz ERP</div>
+            <p class="text-muted small mb-0">Digital Solution for Modern Business</p>
+        </div>
+        <div class="text-md-end">
+            <h1 class="fw-bold text-dark mb-1">INVOICE</h1>
+            <p class="fw-bold text-primary mb-0">#{{ invoice.invoice_number }}</p>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-6">
+            <div class="invoice-label">Billed To</div>
+            <h5 class="fw-bold mb-1">{{ invoice.customer.name }}</h5>
+            <p class="text-muted small mb-1">{{ invoice.customer.address|default:"Address not provided" }}</p>
+            {% if invoice.customer.pan_vat_number %}
+                <p class="text-muted small mb-0"><strong>PAN/VAT:</strong> {{ invoice.customer.pan_vat_number }}</p>
+            {% endif %}
+        </div>
+        <div class="col-md-6 text-md-end">
+            <div class="row g-3">
+                <div class="col-6 col-md-12">
+                    <div class="invoice-label">Invoice Date</div>
+                    <p class="fw-bold mb-0">{{ invoice.date|to_nepali:"%K-%n-%D" }} (BS)</p>
+                    <p class="small text-muted mb-0">{{ invoice.date|date:"Y-m-d" }} (AD)</p>
+                </div>
+                <div class="col-6 col-md-12">
+                    <div class="invoice-label">Due Date</div>
+                    {% if invoice.due_date %}
+                        <p class="fw-bold mb-0 text-danger">{{ invoice.due_date|to_nepali:"%K-%n-%D" }} (BS)</p>
+                        <p class="small text-muted mb-0">{{ invoice.due_date|date:"Y-m-d" }} (AD)</p>
+                    {% else %}
+                        <p class="fw-bold mb-0 text-danger">Prompt Payment</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive mb-5">
+        <table class="table align-middle">
+            <thead class="bg-light">
+                <tr>
+                    <th class="border-0">Description</th>
+                    <th class="border-0 text-center">Qty</th>
+                    <th class="border-0 text-end">Rate (NPR)</th>
+                    <th class="border-0 text-end">VAT %</th>
+                    <th class="border-0 text-end">Amount (NPR)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in invoice.items.all %}
+                <tr>
+                    <td>
+                        <div class="fw-bold text-dark">{{ item.item.name }}</div>
+                        <div class="small text-muted">{{ item.description }}</div>
+                    </td>
+                    <td class="text-center">{{ item.quantity }}</td>
+                    <td class="text-end">{{ item.unit_price|intcomma }}</td>
+                    <td class="text-end">{{ item.tax_rate }}%</td>
+                    <td class="text-end fw-bold">{{ item.amount|intcomma }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="row justify-content-end">
+        <div class="col-md-5">
+            <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Sub Total</span>
+                <span class="fw-bold">NPR {{ invoice.sub_total|intcomma }}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">VAT Total</span>
+                <span class="fw-bold">NPR {{ invoice.tax_amount|intcomma }}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-3">
+                <span class="text-muted">Discount</span>
+                <span class="fw-bold text-success">- NPR {{ invoice.discount_amount|intcomma }}</span>
+            </div>
+            <div class="bg-primary bg-opacity-10 rounded-3 p-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-primary">Grand Total</h5>
+                <h4 class="fw-bold mb-0 text-primary">NPR {{ invoice.grand_total|intcomma }}</h4>
+            </div>
+        </div>
+    </div>
+
+    {% if invoice.notes %}
+    <div class="mt-5 pt-4 border-top">
+        <div class="invoice-label">Notes & Terms</div>
+        <p class="small text-muted mb-0">{{ invoice.notes }}</p>
+    </div>
+    {% endif %}
+
+    <div class="mt-5 text-center text-muted border-top pt-4">
+        <p class="extra-small mb-0">This is a computer-generated invoice and requires no signature.</p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block title %}Vouchers | ERP Neponbiz{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">{% if current_type %}{{ current_type }} Vouchers{% else %}All Vouchers{% endif %}</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'users:dashboard' %}" class="text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'accounting:voucher_list' %}" class="text-decoration-none">Accounting</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{% if current_type %}{{ current_type }}{% else %}All{% endif %}</li>
+            </ol>
+        </nav>
+    </div>
+    <a href="{% url 'accounting:voucher_create' %}{% if current_type %}?type={{ current_type }}{% endif %}" class="btn btn-primary d-flex align-items-center justify-content-center">
+        <i class="bi bi-plus-lg me-2"></i> Create {{ current_type|default:"" }} Voucher
+    </a>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: rgba(255,255,255,0.7); backdrop-filter: blur(10px);" x-data="{ search: '' }">
+    <div class="card-header bg-transparent border-bottom border-light p-4">
+        <div class="row g-3 align-items-center">
+            <div class="col-12 col-md-5">
+                <div class="input-group bg-white rounded-pill border px-3 py-1 shadow-sm focus-within-shadow" style="max-width: 400px;">
+                    <span class="input-group-text bg-transparent border-0"><i class="bi bi-search py-1 text-muted"></i></span>
+                    <input type="text" class="form-control border-0 bg-transparent" placeholder="Search vouchers by number, date or narration..." x-model="search" style="box-shadow: none;">
+                </div>
+            </div>
+            <div class="col-12 col-md-7 text-md-end">
+                <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+                    <a href="?type=" class="btn btn-sm rounded-pill px-3 {% if not current_type %}btn-primary fw-bold shadow-sm{% else %}btn-white border hover-bg-light text-muted{% endif %}">All</a>
+                    <a href="?type=Sales" class="btn btn-sm rounded-pill px-3 {% if current_type == 'Sales' %}btn-primary fw-bold shadow-sm{% else %}btn-white border hover-bg-light text-muted{% endif %}">Sales</a>
+                    <a href="?type=Purchase" class="btn btn-sm rounded-pill px-3 {% if current_type == 'Purchase' %}btn-primary fw-bold shadow-sm{% else %}btn-white border hover-bg-light text-muted{% endif %}">Purchase</a>
+                    <a href="?type=Payment" class="btn btn-sm rounded-pill px-3 {% if current_type == 'Payment' %}btn-primary fw-bold shadow-sm{% else %}btn-white border hover-bg-light text-muted{% endif %}">Payment</a>
+                    <a href="?type=Receipt" class="btn btn-sm rounded-pill px-3 {% if current_type == 'Receipt' %}btn-primary fw-bold shadow-sm{% else %}btn-white border hover-bg-light text-muted{% endif %}">Receipt</a>
+                    <a href="?type=Journal" class="btn btn-sm rounded-pill px-3 {% if current_type == 'Journal' %}btn-primary fw-bold shadow-sm{% else %}btn-white border hover-bg-light text-muted{% endif %}">Journal</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-borderless align-middle mb-0 coa-table">
+            <thead class="bg-light bg-opacity-50 border-bottom border-light">
+                <tr>
+                    <th class="ps-4 py-3 text-muted extra-small text-uppercase letter-spacing-1 fw-bold">Date</th>
+                    <th class="py-3 text-muted extra-small text-uppercase letter-spacing-1 fw-bold">Type</th>
+                    <th class="py-3 text-muted extra-small text-uppercase letter-spacing-1 fw-bold">Number</th>
+                    <th class="py-3 text-muted extra-small text-uppercase letter-spacing-1 fw-bold">Narration</th>
+                    <th class="py-3 text-muted extra-small text-uppercase letter-spacing-1 fw-bold text-end">Amount</th>
+                    <th class="py-3 text-muted extra-small text-uppercase letter-spacing-1 fw-bold text-center">Status</th>
+                    <th class="pe-4 py-3 text-muted extra-small text-uppercase letter-spacing-1 fw-bold text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% load humanize %}
+                {% for voucher in vouchers %}
+                <tr class="border-bottom border-light hover-bg-light transition-fast" x-show="search === '' || $el.innerText.toLowerCase().includes(search.toLowerCase())">
+                    <td class="ps-4 py-3">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 42px; height: 42px;
+                                {% if voucher.voucher_type == 'Sales' %}background-color: rgba(25, 135, 84, 0.1); color: #198754;
+                                {% elif voucher.voucher_type == 'Purchase' %}background-color: rgba(13, 110, 253, 0.1); color: #0d6efd;
+                                {% elif voucher.voucher_type == 'Payment' %}background-color: rgba(220, 53, 69, 0.1); color: #dc3545;
+                                {% elif voucher.voucher_type == 'Receipt' %}background-color: rgba(32, 201, 151, 0.1); color: #20c997;
+                                {% else %}background-color: rgba(255, 193, 7, 0.1); color: #ffc107;{% endif %}">
+                                {% if voucher.voucher_type == 'Sales' %}<i class="bi bi-cart3 fs-5"></i>
+                                {% elif voucher.voucher_type == 'Purchase' %}<i class="bi bi-bag fs-5"></i>
+                                {% elif voucher.voucher_type == 'Payment' %}<i class="bi bi-arrow-up-right-circle fs-5"></i>
+                                {% elif voucher.voucher_type == 'Receipt' %}<i class="bi bi-arrow-down-left-circle fs-5"></i>
+                                {% else %}<i class="bi bi-journal-text fs-5"></i>{% endif %}
+                            </div>
+                            <div>
+                                <div class="d-flex align-items-center">
+                                    <div class="fw-bold text-dark fs-6">{{ voucher.date|date:"M d, Y" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3 align-middle">
+                        <span class="extra-small fw-medium text-uppercase letter-spacing-1
+                            {% if voucher.voucher_type == 'Sales' %}text-success
+                            {% elif voucher.voucher_type == 'Purchase' %}text-primary
+                            {% elif voucher.voucher_type == 'Payment' %}text-danger
+                            {% elif voucher.voucher_type == 'Receipt' %}text-teal
+                            {% else %}text-warning{% endif %}">
+                            {{ voucher.voucher_type }} VOUCHER
+                        </span>
+                    </td>
+                    <td class="py-3 align-middle">
+                        <span class="badge bg-light text-muted border font-monospace px-2 py-1">{{ voucher.number }}</span>
+                    </td>
+                    <td class="py-3">
+                        <div class="small fw-medium text-dark text-wrap" style="max-width: 300px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                            {{ voucher.narration|default:"<span class='text-muted opacity-50 fst-italic'>No narration</span>"|safe }}
+                        </div>
+                    </td>
+                    <td class="py-3 text-end">
+                        <div class="fw-black text-dark fs-6">
+                            <span class="extra-small text-muted opacity-50 fw-normal">NPR</span> {{ voucher.total_amount|floatformat:2|intcomma }}
+                        </div>
+                    </td>
+                    <td class="py-3 text-center">
+                        {% if voucher.is_finalized %}
+                            <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 fw-medium"><i class="bi bi-check-circle me-1"></i> Finalized</span>
+                        {% else %}
+                            <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-3 py-2 fw-medium"><i class="bi bi-pencil me-1"></i> Draft</span>
+                        {% endif %}
+                    </td>
+                    <td class="pe-4 py-3 text-end">
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light border-0 text-muted hover-text-primary rounded-circle" style="width: 32px; height: 32px;" data-bs-toggle="dropdown" data-bs-boundary="viewport">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                                <li><a class="dropdown-item py-2 fw-medium text-primary" href="{% url 'accounting:voucher_detail' voucher.pk %}"><i class="bi bi-eye text-primary opacity-75 me-2"></i> View Voucher</a></li>
+                                <li><a class="dropdown-item py-2 fw-medium" href="{% url 'accounting:voucher_edit' voucher.pk %}"><i class="bi bi-pencil text-muted me-2"></i> Edit Voucher</a></li>
+                                <li><hr class="dropdown-divider opacity-10"></li>
+                                <li><a class="dropdown-item py-2 fw-medium text-danger" href="{% url 'accounting:voucher_delete' voucher.pk %}"><i class="bi bi-trash text-danger opacity-75 me-2"></i> Delete Voucher</a></li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-5">
+                        <div class="py-5">
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 80px; height: 80px;">
+                                <i class="bi bi-calculator" style="font-size: 2.5rem;"></i>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-2">No Vouchers Found</h5>
+                            <p class="text-muted mb-4">{% if current_type %}You have no {{ current_type|lower }} vouchers yet.{% else %}You haven't created any vouchers yet.{% endif %}</p>
+                            <a href="{% url 'accounting:voucher_create' %}{% if current_type %}?type={{ current_type }}{% endif %}" class="btn btn-primary rounded-pill px-4 shadow-sm">
+                                <i class="bi bi-plus-lg me-2"></i> Create Voucher
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if vouchers %}
+    <div class="card-footer bg-transparent border-top border-light p-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <p class="small text-muted mb-0">Showing <strong class="text-dark">{{ vouchers|length }}</strong> vouchers</p>
+            <nav aria-label="Page navigation">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item disabled"><a class="page-item active page-link border-0 text-white bg-primary rounded-3" href="#">1</a></li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+
+{% block title %}Application Status | Neponbiz Finance{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        min-height: 100vh;
+    }
+    .status-card {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        border-radius: 24px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    }
+    .step-indicator {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #e2e8f0;
+        color: #64748b;
+        font-weight: 700;
+        position: relative;
+        z-index: 1;
+    }
+    .step-indicator.active {
+        background: #6366f1;
+        color: white;
+        box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+    }
+    .step-indicator.completed {
+        background: #10b981;
+        color: white;
+    }
+    .step-line {
+        position: absolute;
+        top: 20px;
+        left: 40px;
+        width: calc(100% - 40px);
+        height: 2px;
+        background: #e2e8f0;
+        z-index: 0;
+    }
+    .step-line.completed {
+        background: #10b981;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center justify-content-between mb-5">
+                <div>
+                    <h2 class="fw-black mb-1">Hello, {{ user.first_name }}</h2>
+                    <p class="text-muted">Track your ERP workspace onboarding progress below.</p>
+                </div>
+                <a href="#" class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">Sign Out</a>
+                <form id="logout-form" action="{% url 'logout' %}" method="POST" style="display: none;">
+                    {% csrf_token %}
+                </form>
+            </div>
+
+            {% for req in tenant_requests %}
+            <div class="status-card p-4 p-md-5 mb-4">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div>
+                        <h4 class="fw-bold mb-0">{{ req.company_name }}</h4>
+                        <span class="badge bg-light text-dark border extra-small">{{ req.subdomain }}.neponbiz.com</span>
+                    </div>
+                    {% if req.status == 'PENDING' %}
+                        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-10 px-3 py-2 rounded-pill fw-bold">Review in Progress</span>
+                    {% elif req.status == 'APPROVED' %}
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-10 px-3 py-2 rounded-pill fw-bold">Request Approved</span>
+                    {% else %}
+                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-10 px-3 py-2 rounded-pill fw-bold">Request Declined</span>
+                    {% endif %}
+                </div>
+
+                <!-- Progress Tracker -->
+                <div class="row g-0 position-relative mb-5">
+                    <!-- Step 1: Account Created -->
+                    <div class="col text-center">
+                        <div class="d-flex flex-column align-items-center">
+                            <div class="step-indicator completed mb-2">
+                                <i class="bi bi-check-lg"></i>
+                            </div>
+                            <span class="small fw-bold">Account Setup</span>
+                        </div>
+                    </div>
+                    <div class="step-line completed" style="width: 33%; left: 16.5%;"></div>
+                    
+                    <!-- Step 2: Email Verified -->
+                    <div class="col text-center">
+                        <div class="d-flex flex-column align-items-center">
+                            <div class="step-indicator {% if user.is_email_verified %}completed{% else %}active{% endif %} mb-2">
+                                {% if user.is_email_verified %}<i class="bi bi-check-lg"></i>{% else %}2{% endif %}
+                            </div>
+                            <span class="small fw-bold">Email Verified</span>
+                        </div>
+                    </div>
+                    <div class="step-line {% if req.status != 'PENDING' %}completed{% endif %}" style="width: 33%; left: 50%;"></div>
+
+                    <!-- Step 3: Admin Review -->
+                    <div class="col text-center">
+                        <div class="d-flex flex-column align-items-center">
+                            <div class="step-indicator {% if req.status == 'PENDING' %}active{% elif req.status != 'PENDING' %}completed{% endif %} mb-2">
+                                {% if req.status != 'PENDING' %}<i class="bi bi-check-lg"></i>{% else %}3{% endif %}
+                            </div>
+                            <span class="small fw-bold">Admin Review</span>
+                        </div>
+                    </div>
+                    <div class="step-line {% if req.status == 'APPROVED' %}completed{% endif %}" style="width: 16.5%; left: 83.5%;"></div>
+
+                    <!-- Step 4: Workspace Ready -->
+                    <div class="col text-center">
+                        <div class="d-flex flex-column align-items-center">
+                            <div class="step-indicator {% if req.status == 'APPROVED' %}completed{% endif %} mb-2">
+                                {% if req.status == 'APPROVED' %}<i class="bi bi-rocket-takeoff"></i>{% else %}4{% endif %}
+                            </div>
+                            <span class="small fw-bold">Ready</span>
+                        </div>
+                    </div>
+                </div>
+
+                {% if req.status == 'PENDING' %}
+                <div class="alert alert-primary border-0 bg-primary bg-opacity-10 rounded-4 p-4 mb-0">
+                    <div class="d-flex gap-3">
+                        <i class="bi bi-info-circle-fill fs-4 text-primary"></i>
+                        <div>
+                            <h6 class="fw-bold text-primary mb-1">What happens next?</h6>
+                            <p class="small text-primary mb-0 opacity-75">Our administrators are manually verifying your business details. This typically takes 24-48 hours. Once approved, you'll receive an email with your workspace login credentials.</p>
+                        </div>
+                    </div>
+                </div>
+                {% elif req.status == 'APPROVED' %}
+                <div class="alert alert-success border-0 bg-success bg-opacity-10 rounded-4 p-4 mb-0 text-center">
+                    <i class="bi bi-check-circle-fill fs-1 text-success mb-3 d-block"></i>
+                    <h5 class="fw-bold text-success mb-2">Your Workspace is Live!</h5>
+                    <p class="small text-success mb-4 opacity-75">You can now access your ERP dashboard at the link below using the credentials sent to your email.</p>
+                    <a href="http://{{ req.subdomain }}.localhost:8000/login/" class="btn btn-success px-5 rounded-pill fw-bold">Go to Workspace</a>
+                </div>
+                {% else %}
+                <div class="alert alert-danger border-0 bg-danger bg-opacity-10 rounded-4 p-4 mb-0">
+                    <div class="d-flex gap-3">
+                        <i class="bi bi-x-circle-fill fs-4 text-danger"></i>
+                        <div>
+                            <h6 class="fw-bold text-danger mb-1">Request Declined</h6>
+                            <p class="small text-danger mb-0 opacity-75">Unfortunately, your request could not be approved at this time. If you believe this is an error, please contact our support team.</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% empty %}
+                {% if not user.is_email_verified %}
+                    <div class="status-card p-5 text-center">
+                        <i class="bi bi-envelope-exclamation display-1 text-warning mb-4 d-block"></i>
+                        <h4 class="fw-bold">Verify Your Email</h4>
+                        <p class="text-muted mb-4 px-lg-5">Please check your inbox at <strong>{{ user.email }}</strong> and follow the link to verify your account. You can Only request a workspace after verification.</p>
+                        <form method="POST" action="">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary px-5 rounded-pill fw-bold">Resend Verification Email</button>
+                        </form>
+                    </div>
+                {% else %}
+                    <div class="status-card p-5 text-center">
+                        <i class="bi bi-plus-circle display-1 text-primary mb-4 d-block opacity-25"></i>
+                        <h4 class="fw-bold">No Workspace Found</h4>
+                        <p class="text-muted mb-4">You haven't requested an ERP workspace yet.</p>
+                        <a href="{% url 'customers:landing_page' %}#contact" class="btn btn-primary px-5 rounded-pill fw-bold">Request New Tenant</a>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

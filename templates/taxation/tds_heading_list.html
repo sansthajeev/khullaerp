@@ -1,0 +1,222 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}TDS Revenue Codes | Neponbiz{% endblock %}
+
+{% block admin_extra_css %}
+<style>
+    .table-fixed-header {
+        max-height: 600px;
+        overflow-y: auto;
+        border-radius: 0 0 1rem 1rem;
+    }
+    .table-fixed-header thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: #f8fafc;
+    }
+    .bulk-actions-bar {
+        display: none;
+        background: #fff;
+        border-top: 2px solid #6366f1;
+        box-shadow: 0 -4px 15px rgba(0,0,0,0.05);
+        z-index: 1000;
+    }
+    .search-input-group {
+        max-width: 400px;
+    }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid">
+    <div class="row mb-4 align-items-end">
+        <div class="col-md-5">
+            <h2 class="fw-bold mb-1">TDS Revenue Codes</h2>
+            <p class="text-muted small">Manage official revenue codes for IRD compliance</p>
+        </div>
+        <div class="col-md-7 text-md-end">
+            <div class="d-flex flex-wrap gap-2 justify-content-md-end align-items-center">
+                <form method="get" class="search-input-group flex-grow-1 mb-2 mb-md-0">
+                    <div class="input-group bg-white rounded-pill shadow-sm overflow-hidden border">
+                        <span class="input-group-text bg-white border-0 ps-3">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input type="text" name="q" class="form-control border-0 shadow-none ps-0" placeholder="Search by code or name..." value="{{ query }}">
+                        {% if query %}
+                        <a href="{% url 'taxation:tds_heading_list' %}" class="btn bg-white border-0 text-muted">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
+                        {% endif %}
+                        <button class="btn btn-primary px-4 border-0" type="submit" style="background: #6366f1;">Search</button>
+                    </div>
+                </form>
+
+                <a href="{% url 'taxation:tds_headings_load_defaults' %}" class="btn btn-outline-indigo rounded-pill px-3 shadow-sm border-indigo text-indigo" style="border-color: #6366f1;">
+                    <i class="bi bi-cloud-download me-1"></i> Load Presets
+                </a>
+                
+                <a href="{% url 'taxation:tds_heading_create' %}" class="btn btn-primary rounded-pill px-4 shadow-sm border-0" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
+                    <i class="bi bi-plus-lg me-1"></i> New Code
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <form id="bulkDeleteForm" method="post" action="{% url 'taxation:tds_heading_bulk_delete' %}">
+        {% csrf_token %}
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+            <div class="table-fixed-header">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4" style="width: 40px;">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="selectAllHeadings">
+                                </div>
+                            </th>
+                            <th class="text-uppercase extra-small fw-bold text-muted" style="width: 12%;">Code</th>
+                            <th class="text-uppercase extra-small fw-bold text-muted" style="width: 25%;">Heading Name</th>
+                            <th class="text-uppercase extra-small fw-bold text-muted" style="width: 40%;">Description</th>
+                            <th class="text-end pe-4 text-uppercase extra-small fw-bold text-muted" style="width: 15%;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for heading in page_obj %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="form-check">
+                                    <input class="form-check-input heading-checkbox" type="checkbox" name="heading_ids" value="{{ heading.id }}">
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-indigo-soft text-indigo fw-bold rounded-pill px-3 py-2" style="background: rgba(99, 102, 241, 0.1); color: #4f46e5;">
+                                    {{ heading.code }}
+                                </span>
+                            </td>
+                            <td class="fw-medium text-dark">{{ heading.name }}</td>
+                            <td>
+                                <div class="text-muted small text-truncate" style="max-width: 400px;" title="{{ heading.description }}">
+                                    {{ heading.description|default:"-" }}
+                                </div>
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="btn-group">
+                                    <a href="{% url 'taxation:tds_heading_edit' pk=heading.pk %}" class="btn btn-sm btn-light border-0">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'taxation:tds_heading_delete' pk=heading.pk %}" class="btn btn-sm btn-light text-danger border-0">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5">
+                                <div class="text-muted mb-3">No revenue codes found matching "{{ query }}"</div>
+                                <a href="{% url 'taxation:tds_heading_list' %}" class="btn btn-sm btn-outline-primary rounded-pill px-3">Clear Search</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination Footer -->
+            {% if page_obj.paginator.num_pages > 1 %}
+            <div class="card-footer bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
+                <div class="small text-muted">
+                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} items
+                </div>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link rounded-start-pill px-3" href="?page=1{% if query %}&q={{ query }}{% endif %}"><i class="bi bi-chevron-double-left"></i></a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link px-3" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}"><i class="bi bi-chevron-left"></i></a>
+                        </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link px-3">{{ page_obj.number }}</span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link px-3" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}"><i class="bi bi-chevron-right"></i></a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link rounded-end-pill px-3" href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}"><i class="bi bi-chevron-double-right"></i></a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Bulk Action Floating Bar -->
+        <div class="bulk-actions-bar position-fixed bottom-0 start-50 translate-middle-x mb-4 rounded-pill px-4 py-2 border shadow-lg d-none" id="bulkMenuBar">
+            <div class="d-flex align-items-center gap-3">
+                <span class="small fw-bold text-indigo"><span id="selectedCount">0</span> selected</span>
+                <div class="vr"></div>
+                <button type="button" class="btn btn-sm btn-danger rounded-pill px-3 py-1" onclick="confirmBulkDelete()">
+                    <i class="bi bi-trash me-1"></i> Delete Selected
+                </button>
+                <button type="button" class="btn btn-sm btn-light rounded-circle p-1" onclick="deselectAll()">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectAll = document.getElementById('selectAllHeadings');
+        const checkboxes = document.querySelectorAll('.heading-checkbox');
+        const bulkBar = document.getElementById('bulkMenuBar');
+        const countSpan = document.getElementById('selectedCount');
+
+        function updateBulkBar() {
+            const checkedCount = document.querySelectorAll('.heading-checkbox:checked').length;
+            countSpan.textContent = checkedCount;
+            if (checkedCount > 0) {
+                bulkBar.classList.remove('d-none');
+                bulkBar.classList.add('d-flex');
+            } else {
+                bulkBar.classList.add('d-none');
+                bulkBar.classList.remove('d-flex');
+            }
+        }
+
+        if (selectAll) {
+            selectAll.addEventListener('change', function() {
+                checkboxes.forEach(cb => cb.checked = this.checked);
+                updateBulkBar();
+            });
+        }
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', updateBulkBar);
+        });
+    });
+
+    function deselectAll() {
+        document.querySelectorAll('.heading-checkbox').forEach(cb => cb.checked = false);
+        document.getElementById('selectAllHeadings').checked = false;
+        document.getElementById('bulkMenuBar').classList.add('d-none');
+    }
+
+    function confirmBulkDelete() {
+        if (confirm('Are you sure you want to delete the selected items? Items already used in transactions will be skipped.')) {
+            document.getElementById('bulkDeleteForm').submit();
+        }
+    }
+</script>
+{% endblock %}

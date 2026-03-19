@@ -1,0 +1,85 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Company Settings | ERP Neponbiz{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Company Settings</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'users:dashboard' %}" class="text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">System</li>
+                <li class="breadcrumb-item active" aria-current="page">App Settings</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+            <div class="card-body p-4 p-md-5">
+                <h4 class="fw-bold mb-4 border-bottom pb-3">Module Configuration</h4>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <div class="form-check form-switch fs-5 mb-2">
+                            <input class="form-check-input" type="checkbox" role="switch" id="isVatRegistered" name="is_vat_registered" {% if tenant.is_vat_registered %}checked{% endif %}>
+                            <label class="form-check-label fw-bold ms-2" for="isVatRegistered">VAT Registered Company</label>
+                        </div>
+                        <p class="text-muted small ms-5 mb-0">Enable this if your company is registered for VAT. The system will automatically calculate VAT on sales invoices.</p>
+                    </div>
+
+                    <div class="mb-4 ms-5" id="vatRateSection" style="max-width: 300px; {% if not tenant.is_vat_registered %}display: none;{% endif %}">
+                        <label class="form-label fw-bold small text-muted text-uppercase mb-2">Default VAT Rate (%)</label>
+                        <div class="input-group">
+                            <input type="number" step="0.01" class="form-control fw-bold" name="default_vat_rate" value="{{ tenant.default_vat_rate|floatformat:2 }}" placeholder="13.00">
+                            <span class="input-group-text bg-light fw-bold">%</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-5">
+                        <div class="form-check form-switch fs-5 mb-2">
+                            <input class="form-check-input" type="checkbox" role="switch" id="usesInventory" name="uses_inventory" {% if tenant.uses_inventory %}checked{% endif %}>
+                            <label class="form-check-label fw-bold ms-2" for="usesInventory">Enable Inventory Management</label>
+                        </div>
+                        <p class="text-muted small ms-5 mb-0">Toggle this to 'Off' if you are a purely service-oriented business. This will hide the Stock Items and Adjustments modules, simplifying your workspace.</p>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4 py-2"><i class="bi bi-save me-2"></i> Save Settings</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 bg-light bg-opacity-50">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-white p-3 rounded-circle shadow-sm me-3">
+                        <i class="bi bi-info-circle h4 text-primary mb-0"></i>
+                    </div>
+                    <h5 class="fw-bold mb-0">Tenant Info</h5>
+                </div>
+                <div class="mb-3 border-bottom pb-3">
+                    <label class="small text-muted fw-bold d-block mb-1">Company Name</label>
+                    <span class="fs-6 fw-medium text-dark">{{ tenant.name }}</span>
+                </div>
+                <div class="mb-3 border-bottom pb-3">
+                    <label class="small text-muted fw-bold d-block mb-1">Tenant ID</label>
+                    <span class="text-secondary font-monospace small bg-white px-2 py-1 rounded border">{{ tenant.schema_name }}</span>
+                </div>
+                <div>
+                    <label class="small text-muted fw-bold d-block mb-1">Account Created</label>
+                    <span class="fs-6 fw-medium text-dark">{{ tenant.created_on|date:"F j, Y" }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

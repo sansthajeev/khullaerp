@@ -1,0 +1,99 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+{% load nepali_dates humanize %}
+
+{% block title %}Purchase Invoices | Neponbiz{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center gap-3 mb-4" x-data="{ search: '' }">
+    <div>
+        <h2 class="fw-bold mb-1">Purchase Invoices</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'users:dashboard' %}" class="text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Purchases</li>
+            </ol>
+        </nav>
+    </div>
+    <div class="d-flex gap-2">
+        <div class="input-group" style="width: 250px;">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" class="form-control border-start-0 ps-0" placeholder="Search bills..." x-model="search">
+        </div>
+        <a href="{% url 'purchases:purchase_create' %}" class="btn btn-primary d-flex align-items-center">
+            <i class="bi bi-plus-lg me-2"></i> Register Bill
+        </a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4 border-0">Bill Number</th>
+                    <th class="border-0">Vendor Ref</th>
+                    <th class="border-0">Vendor</th>
+                    <th class="border-0">A/C Code</th>
+                    <th class="border-0">BS Date</th>
+                    <th class="border-0">AD Date</th>
+                    <th class="border-0 text-end">Grand Total</th>
+                    <th class="border-0 text-center">Status</th>
+                    <th class="pe-4 border-0 text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for purchase in purchases %}
+                <tr x-show="'{{ purchase.bill_number }} {{ purchase.vendor.name }}'.toLowerCase().includes(search.toLowerCase())">
+                    <td class="ps-4 fw-bold text-dark">{{ purchase.bill_number }}</td>
+                    <td class="text-muted">{{ purchase.vendor_invoice_number|default:"-" }}</td>
+                    <td class="fw-medium text-dark">{{ purchase.vendor.name }}</td>
+                    <td class="text-muted">{{ purchase.vendor.ledger.code|default:purchase.vendor.code }}</td>
+                    <td class="text-dark fw-medium">{{ purchase.date|to_nepali:"%K-%n-%D" }}</td>
+                    <td class="text-muted">{{ purchase.date|date:"Y-m-d" }}</td>
+                    <td class="text-end fw-bold text-dark">NPR {{ purchase.grand_total|intcomma }}</td>
+                    <td class="text-center">
+                        {% if purchase.status == 'Draft' %}
+                            <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill">Draft</span>
+                        {% elif purchase.status == 'Finalized' %}
+                            <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">Finalized</span>
+                        {% else %}
+                            <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 rounded-pill">{{ purchase.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="pe-4 text-end">
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light border-0" data-bs-toggle="dropdown" data-bs-boundary="viewport">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                <li><a class="dropdown-item" href="{% url 'purchases:purchase_detail' pk=purchase.pk %}"><i class="bi bi-eye me-2"></i> View</a></li>
+                                {% if purchase.status == 'Draft' %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form action="{% url 'purchases:finalize_purchase' pk=purchase.pk %}" method="POST" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item text-success"><i class="bi bi-check-circle me-2"></i> Finalize</button>
+                                        </form>
+                                    </li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="{% url 'purchases:purchase_delete' pk=purchase.pk %}"><i class="bi bi-trash me-2"></i> Delete</a></li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center py-5">
+                        <i class="bi bi-receipt h1 text-muted d-block mb-3"></i>
+                        <p class="text-muted">No purchase invoices found.</p>
+                        <a href="{% url 'purchases:purchase_create' %}" class="btn btn-outline-primary btn-sm">Register First Bill</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

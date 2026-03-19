@@ -1,0 +1,29 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Delete Payroll Run | Neponbiz{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card border-0 shadow rounded-4 p-4 text-center">
+                <div class="mb-4">
+                    <div class="bg-danger bg-opacity-10 text-danger rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                        <i class="bi bi-trash h1 mb-0"></i>
+                    </div>
+                </div>
+                <h4 class="fw-bold mb-2">Delete Payroll Run?</h4>
+                <p class="text-muted mb-4">Are you sure you want to delete payroll run <strong>{{ payroll_run.run_number }}</strong> for <strong>{{ payroll_run.month|date:"F Y" }}</strong>? This action cannot be undone.</p>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-danger py-2 fw-bold shadow-sm">Yes, Delete permanently</button>
+                        <a href="{% url 'hr:payroll_detail' pk=payroll_run.pk %}" class="btn btn-light py-2">No, Keep it</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

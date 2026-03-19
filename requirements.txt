@@ -1,0 +1,8 @@
+Django>=5.0
+django-tenants
+psycopg2-binary
+nepali-datetime
+reportlab
+django-bootstrap5
+django-formset-js-improved
+whitenoise

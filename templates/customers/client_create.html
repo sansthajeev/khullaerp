@@ -1,0 +1,81 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Register New Company | ERP Neponbiz{% endblock %}
+
+{% block admin_content %}
+<div class="mb-4">
+    <h2 class="fw-bold mb-1">Register New Company</h2>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'users:dashboard' %}" class="text-decoration-none">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'customers:client_list' %}" class="text-decoration-none">Companies</a></li>
+            <li class="breadcrumb-item active" aria-current="page">New Registration</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="row">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+            <form method="post">
+                {% csrf_token %}
+                <div class="row g-4">
+                    <div class="col-12">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Legal Company Name</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors }}</div>{% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Database Schema Name</label>
+                        {{ form.schema_name }}
+                        <div class="form-text extra-small">Internal name for data isolation (e.g. apple_inc).</div>
+                        {% if form.schema_name.errors %}<div class="text-danger small">{{ form.schema_name.errors }}</div>{% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Target Subdomain</label>
+                        {{ form.domain_name }}
+                        <div class="form-text extra-small">Include the full host (e.g. apple.neponbiz.com).</div>
+                        {% if form.domain_name.errors %}<div class="text-danger small">{{ form.domain_name.errors }}</div>{% endif %}
+                    </div>
+                    
+                    <div class="col-12 mt-4">
+                        <hr class="my-4">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'customers:client_list' %}" class="btn btn-light px-4">Cancel</a>
+                            <button type="submit" class="btn btn-primary px-5">Provision Company</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="col-lg-5">
+        <div class="bg-primary bg-opacity-10 rounded-4 p-4 h-100">
+            <h5 class="fw-bold mb-3"><i class="bi bi-shield-check me-2 text-primary"></i> Multi-Tenancy Engine</h5>
+            <p class="small text-muted mb-4">When you provision a new company, the system will:</p>
+            
+            <ul class="small text-muted ps-0 list-unstyled">
+                <li class="mb-3 d-flex align-items-start">
+                    <i class="bi bi-check-circle-fill text-primary me-2 mt-1"></i>
+                    <span>Create a dedicated PostgreSQL schema for the tenant.</span>
+                </li>
+                <li class="mb-3 d-flex align-items-start">
+                    <i class="bi bi-check-circle-fill text-primary me-2 mt-1"></i>
+                    <span>Run migrations to set up the accounting and inventory structures.</span>
+                </li>
+                <li class="mb-3 d-flex align-items-start">
+                    <i class="bi bi-check-circle-fill text-primary me-2 mt-1"></i>
+                    <span>Isolate all company data from other tenants.</span>
+                </li>
+            </ul>
+            
+            <div class="alert alert-warning border-0 small mt-4">
+                <strong>Important:</strong> Provisioning a new company can take a few seconds as the database schema is generated.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

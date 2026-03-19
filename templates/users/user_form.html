@@ -1,0 +1,158 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}{{ title }} | ERP Neponbiz{% endblock %}
+
+{% block admin_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="glass-card rounded-5 border-0 shadow-sm overflow-hidden mb-5">
+            <div class="p-4 p-md-5 border-bottom bg-white bg-opacity-70 d-flex align-items-center gap-4">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-4 p-3 d-flex align-items-center justify-content-center shadow-sm d-none d-sm-flex" style="width: 70px; height: 70px;">
+                    <i class="bi bi-person-gear display-5"></i>
+                </div>
+                <div>
+                    <h3 class="fw-black text-dark mb-1">{{ title }}</h3>
+                    <p class="text-muted small mb-0 font-inter">Configure user credentials and branch permissions.</p>
+                </div>
+            </div>
+
+            <div class="p-4 p-md-5">
+                <form method="POST" class="needs-validation">
+                    {% csrf_token %}
+                    
+                    <!-- SECTION 1: IDENTITY -->
+                    <div class="mb-5">
+                        <div class="d-flex align-items-center mb-4">
+                            <span class="badge bg-primary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">1</span>
+                            <h5 class="fw-bold text-dark mb-0">Basic Information</h5>
+                        </div>
+                        <div class="row g-4">
+                            {% for field in form %}
+                                {% if field.name in "first_name,last_name,username,email,phone_number" %}
+                                <div class="{% if field.name == 'first_name' or field.name == 'last_name' %}col-md-6{% else %}col-12{% endif %}">
+                                    <label class="form-label extra-small text-uppercase fw-bold text-muted letter-spacing-1 mb-2">{{ field.label }}</label>
+                                    <div class="input-group-premium">
+                                        {{ field }}
+                                    </div>
+                                    {% if field.errors %}
+                                        <div class="text-danger extra-small mt-2 px-1">
+                                            {% for error in field.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- SECTION 2: SECURITY (Only for Creation) -->
+                    {% if 'password1' in form.fields %}
+                    <div class="mb-5">
+                        <div class="d-flex align-items-center mb-4">
+                            <span class="badge bg-primary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">2</span>
+                            <h5 class="fw-bold text-dark mb-0">Security Setup</h5>
+                        </div>
+                        <div class="row g-4">
+                            {% for field in form %}
+                                {% if 'password' in field.name %}
+                                <div class="col-md-6">
+                                    <label class="form-label extra-small text-uppercase fw-bold text-muted letter-spacing-1 mb-2">{{ field.label }}</label>
+                                    <div class="input-group-premium">
+                                        {{ field }}
+                                    </div>
+                                    {% if field.help_text %}
+                                        <div class="extra-small text-muted mt-2 ps-1" style="font-size: 0.65rem; line-height: 1.4;">{{ field.help_text|safe }}</div>
+                                    {% endif %}
+                                    {% if field.errors %}
+                                        <div class="text-danger extra-small mt-2 px-1">
+                                            {% for error in field.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- SECTION 3: PERMISSIONS -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-4">
+                            <span class="badge bg-primary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">{% if 'password1' in form.fields %}3{% else %}2{% endif %}</span>
+                            <h5 class="fw-bold text-dark mb-0">Access & Permissions</h5>
+                        </div>
+                        <div class="row g-3">
+                            {% for field in form %}
+                                {% if field.name == 'is_staff' or field.name == 'is_active' or field.name == 'is_merchant' %}
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch p-3 px-4 rounded-4 border bg-light bg-opacity-50 transition-all hover-border-primary d-flex align-items-center justify-content-between h-100">
+                                        <label class="form-check-label fw-bold cursor-pointer mb-0" for="{{ field.id_for_label }}">
+                                            {{ field.label }}
+                                            {% if field.help_text %}
+                                                <div class="extra-small text-muted fw-normal mt-1">{{ field.help_text }}</div>
+                                            {% endif %}
+                                        </label>
+                                        {{ field }}
+                                    </div>
+                                </div>
+                                {% elif field.name == 'role' %}
+                                <div class="col-12 mt-3">
+                                    <label class="form-label extra-small text-uppercase fw-bold text-muted letter-spacing-1 mb-2">Assigned Staff Role</label>
+                                    <div class="input-group-premium">
+                                        {{ field }}
+                                    </div>
+                                    <div class="extra-small text-muted mt-2">
+                                        <i class="bi bi-info-circle me-1"></i> 
+                                        Assign a predefined role to control which modules this user can access. 
+                                        <a href="{% url 'users:role_list' %}" class="text-primary text-decoration-none fw-bold">Manage Roles</a>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column flex-sm-row align-items-center justify-content-between mt-5 pt-4 border-top gap-3">
+                        <a href="{% url 'users:user_list' %}" class="btn btn-light px-4 py-2 rounded-4 fw-bold border order-2 order-sm-1 w-100 w-sm-auto">
+                            <i class="bi bi-arrow-left me-2"></i> Back to List
+                        </a>
+                        <button type="submit" class="btn btn-premium-primary px-5 py-3 rounded-4 fw-black order-1 order-sm-2 w-100 w-sm-auto">
+                            <i class="bi bi-check-circle-fill me-2"></i> {% if 'password1' in form.fields %}PROVISION USER{% else %}UPDATE PROFILE{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+            
+            <div class="mt-4 p-4 rounded-4 bg-info bg-opacity-10 border border-info border-opacity-20 d-flex gap-3 align-items-center">
+                <i class="bi bi-info-circle-fill text-info fs-3"></i>
+                <div class="small text-info-emphasis">
+                    <strong>Pro Tip:</strong> Staff users can access Navigator modules but cannot change company-wide settings. Only Merchants have full control over branch configurations.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .input-group-premium .form-control {
+        border: 2px solid #f1f5f9;
+        padding: 0.8rem 1.2rem;
+        border-radius: 14px !important;
+        font-weight: 500;
+        box-shadow: none;
+        transition: all 0.3s ease;
+    }
+    .input-group-premium .form-control:focus {
+        border-color: var(--brand-color);
+        background-color: white;
+    }
+    .hover-border-primary:hover {
+        border-color: var(--brand-color) !important;
+    }
+    .form-check-input:checked {
+        background-color: var(--brand-color);
+        border-color: var(--brand-color);
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,241 @@
+{% extends 'admin/base.html' %}
+{% load django_bootstrap5 %}
+{% load nepali_dates %}
+{% load humanize %}
+
+{% block title %}Trial Balance | ERP Neponbiz{% endblock %}
+
+{% block admin_extra_css %}
+<link href="https://nepalidatepicker.sajanmaharjan.com.np/v5/nepali.datepicker/css/nepali.datepicker.v5.0.6.min.css" rel="stylesheet" type="text/css"/>
+<style>
+    .report-card {
+        background: white;
+        border-radius: var(--radius-premium);
+        box-shadow: 0 4px 20px -5px rgba(0,0,0,0.05);
+        padding: 2.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border-color);
+    }
+    .report-table th {
+        background: #f8fafc;
+        padding: 10px 12px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+        border-bottom: 2px solid #f1f5f9;
+        font-family: 'Outfit', sans-serif;
+    }
+    .report-table td {
+        padding: 12px 12px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.8rem;
+        vertical-align: middle;
+    }
+    .sub-head {
+        background: #f1f5f9;
+        font-weight: 800;
+        font-size: 0.6rem;
+        text-align: center;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .numbers-font {
+        font-family: 'JetBrains Mono', monospace;
+    }
+    [x-cloak] { display: none !important; }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid px-4" x-data="reportFilter()" x-init="init()">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-1 brand-font">Periodic Trial Balance</h4>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'users:dashboard' %}" class="text-decoration-none text-primary opacity-75">Finance</a></li>
+                    <li class="breadcrumb-item active text-muted" aria-current="page">Trial Balance</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-sm btn-light border px-3">
+                <i class="bi bi-printer me-1"></i> Print
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5 p-4" style="background: rgba(255,255,255,0.6); backdrop-filter: blur(10px);">
+        <form method="get" id="filterForm" class="row g-3 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label extra-small fw-bold text-muted text-uppercase">From (BS)</label>
+                <input type="text" name="from_date_bs" id="picker_from_bs" class="form-control form-control-sm bg-white" x-model="from_bs" readonly>
+                <input type="hidden" name="from_date_ad" x-model="from_ad">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label extra-small fw-bold text-muted text-uppercase">To (BS)</label>
+                <input type="text" name="to_date_bs" id="picker_to_bs" class="form-control form-control-sm bg-white" x-model="to_bs" readonly>
+                <input type="hidden" name="to_date_ad" x-model="to_ad">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-premium-primary w-100 py-2">
+                    <i class="bi bi-funnel-fill me-2"></i> Update Report
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="report-card">
+        <div class="text-center mb-5">
+            <h5 class="fw-bold mb-0">{{ request.tenant.name|default:"ERP NEPONBIZ" }}</h5>
+            <div class="text-muted small">Periodic Trial Balance</div>
+            <div class="extra-small text-muted opacity-75 mt-1">Period: {{ from_date|date:"M d, Y" }} — {{ to_date|date:"M d, Y" }}</div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table report-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2" style="width: 8%" class="align-middle">Code</th>
+                        <th rowspan="2" style="width: 20%" class="align-middle">Account Name</th>
+                        <th colspan="2" class="text-center border-start">Opening Balance</th>
+                        <th colspan="2" class="text-center border-start">Transactions</th>
+                        <th colspan="2" class="text-center border-start">Closing Balance</th>
+                    </tr>
+                    <tr class="sub-head">
+                        <th class="border-start">Dr</th>
+                        <th>Cr</th>
+                        <th class="border-start">Debit</th>
+                        <th>Credit</th>
+                        <th class="border-start">Dr</th>
+                        <th>Cr</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in report_data %}
+                    <tr>
+                        <td class="numbers-font text-muted">{{ row.code }}</td>
+                        <td class="fw-bold text-dark">{{ row.name }}</td>
+                        
+                        <!-- Opening -->
+                        <td class="text-end numbers-font border-start text-muted">{% if row.opening_dr > 0 %}{{ row.opening_dr|floatformat:2|intcomma }}{% else %}-{% endif %}</td>
+                        <td class="text-end numbers-font text-muted">{% if row.opening_cr > 0 %}{{ row.opening_cr|floatformat:2|intcomma }}{% else %}-{% endif %}</td>
+                        
+                        <!-- Transactions -->
+                        <td class="text-end numbers-font border-start">{% if row.period_dr > 0 %}{{ row.period_dr|floatformat:2|intcomma }}{% else %}-{% endif %}</td>
+                        <td class="text-end numbers-font">{% if row.period_cr > 0 %}{{ row.period_cr|floatformat:2|intcomma }}{% else %}-{% endif %}</td>
+                        
+                        <!-- Closing -->
+                        <td class="text-end numbers-font border-start fw-bold">{% if row.closing_dr > 0 %}{{ row.closing_dr|floatformat:2|intcomma }}{% else %}-{% endif %}</td>
+                        <td class="text-end numbers-font fw-bold">{% if row.closing_cr > 0 %}{{ row.closing_cr|floatformat:2|intcomma }}{% else %}-{% endif %}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted small">No active accounts found for this period.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold bg-light bg-opacity-50">
+                        <td colspan="2" class="text-end text-uppercase extra-small py-3">Grand Total</td>
+                        
+                        <td class="text-end numbers-font border-start">{{ total_opening_dr|floatformat:2|intcomma }}</td>
+                        <td class="text-end numbers-font">{{ total_opening_cr|floatformat:2|intcomma }}</td>
+                        
+                        <td class="text-end numbers-font border-start">{{ total_period_dr|floatformat:2|intcomma }}</td>
+                        <td class="text-end numbers-font">{{ total_period_cr|floatformat:2|intcomma }}</td>
+                        
+                        <td class="text-end numbers-font border-start text-primary">{{ total_closing_dr|floatformat:2|intcomma }}</td>
+                        <td class="text-end numbers-font text-danger">{{ total_closing_cr|floatformat:2|intcomma }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        {% if total_closing_dr != total_closing_cr %}
+        <div class="alert alert-danger border-0 shadow-sm mt-4 small d-flex align-items-center">
+            <i class="bi bi-exclamation-octagon-fill me-2 h5 mb-0"></i>
+            <div>
+                <strong>Warning:</strong> The Closing Trial Balance is not equal (Difference: {{ total_closing_dr|add:total_closing_cr|abs_val|floatformat:2|intcomma }}). 
+            </div>
+        </div>
+        {% else %}
+        <div class="mt-4 text-center">
+            <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill small">
+                <i class="bi bi-check-circle-fill me-1"></i> Ledger is perfectly balanced
+            </span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://nepalidatepicker.sajanmaharjan.com.np/v5/nepali.datepicker/js/nepali.datepicker.v5.0.6.min.js" type="text/javascript"></script>
+<script>
+    function reportFilter() {
+        return {
+            from_ad: '{{ from_date|date:"Y-m-d" }}',
+            to_ad: '{{ to_date|date:"Y-m-d" }}',
+            from_bs: '',
+            to_bs: '',
+
+            init() {
+                this.waitForLibrary(() => {
+                    this.updateBSFromAD();
+                    this.initPickers();
+                });
+            },
+
+            waitForLibrary(cb) {
+                if (typeof NepaliFunctions !== 'undefined') cb();
+                else setTimeout(() => this.waitForLibrary(cb), 100);
+            },
+
+            updateBSFromAD() {
+                const f_arr = this.from_ad.split("-");
+                if (f_arr.length === 3) {
+                    const bs = NepaliFunctions.AD2BS({ year: parseInt(f_arr[0]), month: parseInt(f_arr[1]), day: parseInt(f_arr[2]) });
+                    this.from_bs = bs.year + "-" + String(bs.month).padStart(2,'0') + "-" + String(bs.day).padStart(2,'0');
+                }
+                const t_arr = this.to_ad.split("-");
+                if (t_arr.length === 3) {
+                    const bs = NepaliFunctions.AD2BS({ year: parseInt(t_arr[0]), month: parseInt(t_arr[1]), day: parseInt(t_arr[2]) });
+                    this.to_bs = bs.year + "-" + String(bs.month).padStart(2,'0') + "-" + String(bs.day).padStart(2,'0');
+                }
+            },
+
+            updateADFromBS() {
+                if (this.from_bs) {
+                    const f = this.from_bs.split("-");
+                    const ad = NepaliFunctions.BS2AD({ year: parseInt(f[0]), month: parseInt(f[1]), day: parseInt(f[2]) });
+                    this.from_ad = ad.year + "-" + String(ad.month).padStart(2,'0') + "-" + String(ad.day).padStart(2,'0');
+                }
+                if (this.to_bs) {
+                    const t = this.to_bs.split("-");
+                    const ad = NepaliFunctions.BS2AD({ year: parseInt(t[0]), month: parseInt(t[1]), day: parseInt(t[2]) });
+                    this.to_ad = ad.year + "-" + String(ad.month).padStart(2,'0') + "-" + String(ad.day).padStart(2,'0');
+                }
+            },
+
+            initPickers() {
+                const fromEl = document.getElementById("picker_from_bs");
+                if (fromEl) {
+                    fromEl.nepaliDatePicker({
+                        onSelect: (data) => { this.from_bs = data.value; this.updateADFromBS(); }
+                    });
+                }
+                const toEl = document.getElementById("picker_to_bs");
+                if (toEl) {
+                    toEl.nepaliDatePicker({
+                        onSelect: (data) => { this.to_bs = data.value; this.updateADFromBS(); }
+                    });
+                }
+            }
+        }
+    }
+</script>
+{% endblock %}

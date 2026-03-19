@@ -1,0 +1,240 @@
+{% extends 'admin/base.html' %}
+{% load django_bootstrap5 %}
+{% load nepali_dates %}
+{% load humanize %}
+
+{% block title %}Profit & Loss | ERP Neponbiz{% endblock %}
+
+{% block admin_extra_css %}
+<link href="https://nepalidatepicker.sajanmaharjan.com.np/v5/nepali.datepicker/css/nepali.datepicker.v5.0.6.min.css" rel="stylesheet" type="text/css"/>
+<style>
+    .report-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        padding: 2.5rem;
+        margin-bottom: 2rem;
+    }
+    .report-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .report-table th {
+        background: #f8fafc;
+        padding: 12px 16px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        border-bottom: 2px solid #f1f5f9;
+        color: #64748b;
+    }
+    .report-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.95rem;
+    }
+    .text-income { color: #059669; }
+    .text-expense { color: #dc2626; }
+    .total-row {
+        background: #f8fafc;
+        font-weight: 800;
+    }
+    .filter-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .numbers-font {
+        font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
+    }
+    .category-header {
+        background: #f1f5f9;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        color: #475569;
+    }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid px-4" x-data="reportFilter()" x-init="init()">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-1">Profit & Loss Statement</h4>
+            <p class="text-muted small mb-0">Analysis of revenue and expenses from <strong>{{ from_date|date:"M d, Y" }}</strong> to <strong>{{ to_date|date:"M d, Y" }}</strong>.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-sm btn-outline-secondary border-0">
+                <i class="bi bi-printer me-1"></i> Print
+            </button>
+            <button class="btn btn-sm btn-outline-primary border-0">
+                <i class="bi bi-file-earmark-excel me-1"></i> Export
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="filter-card shadow-sm mb-4">
+        <form method="get" id="filterForm" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted text-uppercase">From (AD)</label>
+                <input type="date" name="from_date_ad" class="form-control form-control-sm" x-model="from_ad" @change="updateFromBS()">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted text-uppercase">From (BS)</label>
+                <input type="text" name="from_date_bs" id="picker_from_bs" class="form-control form-control-sm bg-white" x-model="from_bs" readonly>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted text-uppercase">To (AD)</label>
+                <input type="date" name="to_date_ad" class="form-control form-control-sm" x-model="to_ad" @change="updateToBS()">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary btn-sm w-100 py-2 fw-bold">
+                    <i class="bi bi-funnel-fill me-2"></i> Update
+                </button>
+            </div>
+            <div class="col-md-3 mt-2">
+                <label class="form-label small fw-bold text-muted text-uppercase">To (BS)</label>
+                <input type="text" name="to_date_bs" id="picker_to_bs" class="form-control form-control-sm bg-white" x-model="to_bs" readonly>
+            </div>
+        </form>
+    </div>
+
+    <div class="report-card">
+        <div class="text-center mb-5">
+            <h5 class="fw-bold mb-0">{{ request.tenant.name|default:"SY PANEL NEPAL LTD" }}</h5>
+            <div class="text-muted small">Profit & Loss Statement</div>
+            <div class="extra-small text-muted opacity-75 mt-1">Period: {{ from_date|date:"M d" }} - {{ to_date|date:"M d, Y" }}</div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th style="width: 70%">Description</th>
+                        <th style="width: 30%" class="text-end">Amount (NPR)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- REVENUE SECTION -->
+                    <tr class="category-header">
+                        <td colspan="2">Revenue / Income</td>
+                    </tr>
+                    {% for ledger in income_ledgers %}
+                    <tr>
+                        <td class="ps-4">{{ ledger.name }}</td>
+                        <td class="text-end numbers-font text-income">{{ ledger.balance|abs_val|floatformat:2|intcomma }}</td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="total-row">
+                        <td class="ps-4 text-uppercase extra-small">Total Income</td>
+                        <td class="text-end numbers-font">{{ total_income|floatformat:2|intcomma }}</td>
+                    </tr>
+
+                    <!-- EXPENSES SECTION -->
+                    <tr class="category-header">
+                        <td colspan="2" class="pt-4">Expenses</td>
+                    </tr>
+                    {% for ledger in expense_ledgers %}
+                    <tr>
+                        <td class="ps-4">{{ ledger.name }}</td>
+                        <td class="text-end numbers-font text-expense">{{ ledger.balance|floatformat:2|intcomma }}</td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="total-row">
+                        <td class="ps-4 text-uppercase extra-small">Total Expenses</td>
+                        <td class="text-end numbers-font">({{ total_expense|floatformat:2|intcomma }})</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr class="bg-dark text-white fw-bold">
+                        <td class="text-uppercase py-3 ps-4">Net Profit / (Loss)</td>
+                        <td class="text-end numbers-font py-3 ps-4 pe-4 h4 mb-0">
+                            {% if net_profit < 0 %}({% endif %}{{ net_profit|abs_val|floatformat:2|intcomma }}{% if net_profit < 0 %}){% endif %}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="mt-4 text-muted small text-center p-3 rounded-3" style="background: #f8fafc;">
+            <i class="bi bi-info-circle me-1"></i> This report is generated dynamically based on transaction history for the selected period.
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://nepalidatepicker.sajanmaharjan.com.np/v5/nepali.datepicker/js/nepali.datepicker.v5.0.6.min.js" type="text/javascript"></script>
+<script>
+    function reportFilter() {
+        return {
+            from_ad: '{{ from_date|date:"Y-m-d" }}',
+            from_bs: '',
+            to_ad: '{{ to_date|date:"Y-m-d" }}',
+            to_bs: '',
+
+            init() {
+                this.waitForLibrary(() => {
+                    this.updateFromBS();
+                    this.updateToBS();
+                    this.initPickers();
+                });
+            },
+
+            waitForLibrary(cb) {
+                if (typeof NepaliFunctions !== 'undefined') cb();
+                else setTimeout(() => this.waitForLibrary(cb), 100);
+            },
+
+            updateFromBS() {
+                const arr = this.from_ad.split("-");
+                if (arr.length !== 3) return;
+                const bs = NepaliFunctions.AD2BS({ year: parseInt(arr[0]), month: parseInt(arr[1]), day: parseInt(arr[2]) });
+                this.from_bs = bs.year + "-" + String(bs.month).padStart(2,'0') + "-" + String(bs.day).padStart(2,'0');
+            },
+
+            updateToBS() {
+                const arr = this.to_ad.split("-");
+                if (arr.length !== 3) return;
+                const bs = NepaliFunctions.AD2BS({ year: parseInt(arr[0]), month: parseInt(arr[1]), day: parseInt(arr[2]) });
+                this.to_bs = bs.year + "-" + String(bs.month).padStart(2,'0') + "-" + String(bs.day).padStart(2,'0');
+            },
+
+            updateFromAD() {
+                const arr = this.from_bs.split("-");
+                if (arr.length !== 3) return;
+                const ad = NepaliFunctions.BS2AD({ year: parseInt(arr[0]), month: parseInt(arr[1]), day: parseInt(arr[2]) });
+                this.from_ad = ad.year + "-" + String(ad.month).padStart(2,'0') + "-" + String(ad.day).padStart(2,'0');
+            },
+
+            updateToAD() {
+                const arr = this.to_bs.split("-");
+                if (arr.length !== 3) return;
+                const ad = NepaliFunctions.BS2AD({ year: parseInt(arr[0]), month: parseInt(arr[1]), day: parseInt(arr[2]) });
+                this.to_ad = ad.year + "-" + String(ad.month).padStart(2,'0') + "-" + String(ad.day).padStart(2,'0');
+            },
+
+            initPickers() {
+                const fromEl = document.getElementById("picker_from_bs");
+                const toEl = document.getElementById("picker_to_bs");
+                if (fromEl) {
+                    fromEl.nepaliDatePicker({
+                        onSelect: (data) => { this.from_bs = data.value; this.updateFromAD(); }
+                    });
+                }
+                if (toEl) {
+                    toEl.nepaliDatePicker({
+                        onSelect: (data) => { this.to_bs = data.value; this.updateToAD(); }
+                    });
+                }
+            }
+        }
+    }
+</script>
+{% endblock %}

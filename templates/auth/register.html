@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Account | ERP Neponbiz{% endblock %}
+
+{% block extra_css %}
+<style>
+    .login-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #fff;
+    }
+    .auth-card {
+        border: none;
+        box-shadow: none;
+        width: 100%;
+        max-width: 450px;
+        padding: 2rem;
+    }
+    .brand-section {
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 4rem;
+        color: white;
+    }
+    .brand-section h1 {
+        font-size: 3.5rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+    }
+    .brand-section p {
+        font-size: 1.25rem;
+        opacity: 0.9;
+        max-width: 500px;
+    }
+    .brand-logo {
+        width: 150px;
+        margin-bottom: 3rem;
+    }
+    @media (max-width: 991.98px) {
+        .brand-section {
+            display: none;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="row g-0">
+        <!-- Left Side: Registration Form -->
+        <div class="col-lg-5 col-xl-4 login-container">
+            <div class="auth-card">
+                <div class="mb-5">
+                    <div class="d-lg-none mb-4">
+                        <div class="h3 fw-bold text-primary"><i class="bi bi-rocket-takeoff-fill me-2"></i> Neponbiz</div>
+                    </div>
+                    <h2 class="fw-bold text-dark">Get Started</h2>
+                    <p class="text-muted">Create your account to start managing your business.</p>
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-muted small fw-medium">First Name</label>
+                            <input type="text" name="first_name" class="form-control" placeholder="John" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small fw-medium">Last Name</label>
+                            <input type="text" name="last_name" class="form-control" placeholder="Doe" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-medium">Email Address</label>
+                        <input type="email" name="email" class="form-control" placeholder="name@company.com" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-medium">Password</label>
+                        <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="terms" required>
+                            <label class="form-check-label text-muted small" for="terms">I agree to the <a href="#" class="text-primary text-decoration-none">Terms of Service</a> and <a href="#" class="text-primary text-decoration-none">Privacy Policy</a>.</label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100 mb-4">Create account</button>
+                    
+                    <div class="text-center">
+                        <p class="text-muted small">Already have an account? <a href="{% url 'login' %}" class="text-primary fw-medium text-decoration-none">Sign in</a></p>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Right Side: Brand Showcase -->
+        <div class="col-lg-7 col-xl-8 brand-section">
+            <div class="brand-logo-container">
+                <div class="h3 fw-bold mb-4"><i class="bi bi-rocket-takeoff-fill me-2"></i> Neponbiz</div>
+            </div>
+            <h1>Scale your business with confidence.</h1>
+            <p>Join thousands of businesses that trust Neponbiz for their financial and operational excellence.</p>
+            
+            <div class="mt-5 pt-5">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-white bg-opacity-25 rounded-circle p-2 me-3">
+                                <i class="bi bi-lightning-charge-fill h4 mb-0"></i>
+                            </div>
+                            <h5 class="mb-0">Fast Setup</h5>
+                        </div>
+                        <p class="small opacity-75">Get your business schema ready in minutes with our automated onboarding wizard.</p>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-white bg-opacity-25 rounded-circle p-2 me-3">
+                                <i class="bi bi-people-fill h4 mb-0"></i>
+                            </div>
+                            <h5 class="mb-0">Team Collaboration</h5>
+                        </div>
+                        <p class="small opacity-75">Invite your team members and assign specific roles to keep things organized.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

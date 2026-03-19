@@ -1,0 +1,112 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Tenant Requests | SaaS Admin{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1 text-dark text-uppercase letter-spacing-1">Workspace Requests</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'customers:client_list' %}" class="text-decoration-none">SaaS Admin</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Requests</li>
+            </ol>
+        </nav>
+    </div>
+    <div class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-10 px-3 py-2 rounded-pill fw-bold">
+        Pending: {{ tenant_requests.count }}
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4 border-0 text-muted extra-small text-uppercase fw-bold">Company / Subdomain</th>
+                    <th class="border-0 text-muted extra-small text-uppercase fw-bold">Contact Info</th>
+                    <th class="border-0 text-muted extra-small text-uppercase fw-bold text-center">Status</th>
+                    <th class="border-0 text-muted extra-small text-uppercase fw-bold text-center">Requested On</th>
+                    <th class="pe-4 border-0 text-muted extra-small text-uppercase fw-bold text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in tenant_requests %}
+                <tr>
+                    <td class="ps-4">
+                        <div class="fw-bold text-dark">{{ req.company_name }}</div>
+                        <div class="badge bg-light text-dark extra-small border">.{{ req.subdomain }}.neponbiz.com</div>
+                    </td>
+                    <td>
+                        <div class="small fw-semibold"><i class="bi bi-envelope me-1"></i> {{ req.contact_email }}</div>
+                        <div class="extra-small text-muted"><i class="bi bi-phone me-1"></i> {{ req.contact_phone }}</div>
+                    </td>
+                    <td class="text-center">
+                        {% if req.status == 'PENDING' %}
+                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-10 px-2 py-1 rounded-pill extra-small">Pending</span>
+                        {% elif req.status == 'APPROVED' %}
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-10 px-2 py-1 rounded-pill extra-small">Approved</span>
+                        {% else %}
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-10 px-2 py-1 rounded-pill extra-small">Rejected</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center small text-muted">
+                        {{ req.created_at|date:"Y-m-d H:i" }}
+                    </td>
+                    <td class="pe-4 text-end">
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-primary border-0 rounded-pill" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2">
+                                <li><h6 class="dropdown-header small text-uppercase fw-bold">Manage Request</h6></li>
+                                {% if req.status == 'PENDING' %}
+                                <li>
+                                    <form action="{% url 'customers:tenant_request_approve' req.pk %}" method="POST" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item text-success" onclick="return confirm('Approve and create this tenant workspace?')">
+                                            <i class="bi bi-check2-circle me-2"></i> Approve & Setup
+                                        </button>
+                                    </form>
+                                </li>
+                                {% endif %}
+                                {% if req.status == 'APPROVED' %}
+                                <li>
+                                    <form action="{% url 'customers:tenant_request_resend_welcome' req.pk %}" method="POST" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item text-primary" onclick="return confirm('Resend welcome email with login details to {{ req.contact_email }}?')">
+                                            <i class="bi bi-envelope-at me-2"></i> Resend Welcome
+                                        </button>
+                                    </form>
+                                </li>
+                                {% endif %}
+                                <li><a class="dropdown-item" href="#" data-bs-toggle="collapse" data-bs-target="#desc-{{ req.id }}"><i class="bi bi-info-circle me-2"></i> View Details</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-x-circle me-2"></i> Reject</a></li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="collapse" id="desc-{{ req.id }}">
+                    <td colspan="5" class="bg-light bg-opacity-50 p-4">
+                        <h6 class="extra-small text-uppercase fw-bold text-muted mb-2">Service Description / Needs</h6>
+                        <div class="card p-3 border-0 shadow-sm bg-white small">
+                            {{ req.service_description|linebreaks|default:"No description provided." }}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-5">
+                        <div class="py-4 opacity-25">
+                            <i class="bi bi-inbox h1 mb-3 d-block"></i>
+                            <p>No new tenant requests at the moment.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,359 @@
+{% extends 'admin/base.html' %}
+{% load nepali_dates humanize %}
+
+{% block title %}Dashboard | ERP Neponbiz{% endblock %}
+
+{% block admin_content %}
+<style>
+    .card-stats {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s;
+    }
+    .card-stats:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.05) !important;
+    }
+    .border-dashed {
+        border-style: dashed !important;
+    }
+    .stats-growth {
+        font-size: 0.75rem;
+        padding: 2px 8px;
+        border-radius: 20px;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+    <div>
+        <h4 class="fw-bold mb-0">Business Intelligence Overview</h4>
+        <p class="text-muted small mb-0">Unified financial metrics and activity tracking.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-white border shadow-sm btn-sm fw-bold"><i class="bi bi-download me-1"></i> Export Data</button>
+        <button class="btn btn-primary btn-sm fw-bold"><i class="bi bi-gear me-1"></i> Dashboard Settings</button>
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6 col-lg-3">
+        <div class="card card-stats p-4 bg-white shadow-sm border-0 rounded-4 h-100">
+            <div class="d-flex justify-content-between mb-3">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    <i class="bi bi-wallet2 h5 mb-0"></i>
+                </div>
+                <div class="stats-growth bg-success bg-opacity-10 text-success fw-bold">+14%</div>
+            </div>
+            <p class="text-muted small mb-1 fw-medium text-uppercase">Total Revenue</p>
+            <h3 class="fw-bold mb-0 text-dark numbers-font">NPR {{ total_revenue|default:"0"|indian_intl }}</h3>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3">
+        <div class="card card-stats p-4 bg-white shadow-sm border-0 rounded-4 h-100">
+            <div class="d-flex justify-content-between mb-3">
+                <div class="bg-danger bg-opacity-10 text-danger rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    <i class="bi bi-cart-check h5 mb-0"></i>
+                </div>
+                <div class="stats-growth bg-danger bg-opacity-10 text-danger fw-bold">+8%</div>
+            </div>
+            <p class="text-muted small mb-1 fw-medium text-uppercase">Total Purchases</p>
+            <h3 class="fw-bold mb-0 text-dark numbers-font">NPR {{ total_purchases|default:"0"|indian_intl }}</h3>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3">
+        <div class="card card-stats p-4 bg-white shadow-sm border-0 rounded-4 h-100">
+            <div class="d-flex justify-content-between mb-3">
+                <div class="bg-success bg-opacity-10 text-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    <i class="bi bi-currency-exchange h5 mb-0"></i>
+                </div>
+                <div class="stats-growth bg-info bg-opacity-10 text-info fw-bold">Active</div>
+            </div>
+            <p class="text-muted small mb-1 fw-medium text-uppercase">Net Cash Flow</p>
+            <h3 class="fw-bold mb-0 {% if net_flow >= 0 %}text-success{% else %}text-danger{% endif %} numbers-font">NPR {{ net_flow|default:"0"|indian_intl }}</h3>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3">
+        <div class="card card-stats p-4 bg-white shadow-sm border-0 rounded-4 h-100">
+            <div class="d-flex justify-content-between mb-3">
+                <div class="bg-info bg-opacity-10 text-info rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    <i class="bi bi-box-seam h5 mb-0"></i>
+                </div>
+            </div>
+            <p class="text-muted small mb-1 fw-medium text-uppercase">Stock Units</p>
+            <h3 class="fw-bold mb-0 text-dark numbers-font">{{ item_count|default:"0" }}</h3>
+        </div>
+    </div>
+</div>
+
+<!-- Chart Row -->
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm p-4 rounded-4 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="fw-bold mb-0">Financial Trend Analysis (2024)</h5>
+                <div class="btn-group">
+                    <button class="btn btn-outline-secondary btn-sm active">Monthly</button>
+                    <button class="btn btn-outline-secondary btn-sm">Quarterly</button>
+                </div>
+            </div>
+            <div style="height: 380px;">
+                <canvas id="financialChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity & Quick Actions -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <!-- Sales & Purchases Tabs -->
+        <div class="card border-0 shadow-sm rounded-4 bg-white mb-4">
+            <div class="card-header bg-white border-0 p-4 pb-0">
+                <ul class="nav nav-pills" id="activityTabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active fw-bold small text-uppercase" id="sales-tab" data-bs-toggle="pill" data-bs-target="#sales-content">Sales Activity</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold small text-uppercase" id="purchases-tab" data-bs-toggle="pill" data-bs-target="#purchases-content">Purchases</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold small text-uppercase" id="vouchers-tab" data-bs-toggle="pill" data-bs-target="#vouchers-content">System Vouchers</button>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body p-4 pt-4">
+                <div class="tab-content">
+                    <!-- Sales -->
+                    <div class="tab-pane fade show active" id="sales-content">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="border-0 rounded-start">Invoice #</th>
+                                        <th class="border-0">Customer</th>
+                                        <th class="border-0 text-end">Amount</th>
+                                        <th class="border-0">Status</th>
+                                        <th class="border-0 rounded-end">Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for inv in recent_invoices %}
+                                    <tr>
+                                        <td class="fw-medium text-primary">{{ inv.invoice_number }}</td>
+                                        <td class="fw-bold text-dark">{{ inv.customer.name }}</td>
+                                        <td class="fw-bold text-end numbers-font">NPR {{ inv.grand_total|indian_intl }}</td>
+                                        <td>
+                                            {% if inv.status == 'Draft' %}
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary">Draft</span>
+                                            {% elif inv.status == 'Finalized' %}
+                                            <span class="badge bg-success bg-opacity-10 text-success">Finalized</span>
+                                            {% else %}
+                                            <span class="badge bg-danger bg-opacity-10 text-danger">Cancelled</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-muted small">
+                                            <span class="fw-medium text-dark">{{ inv.date|to_nepali:"%K-%n-%D" }}</span>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="5" class="text-center py-4 text-muted">No recent sales.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <!-- Purchases -->
+                    <div class="tab-pane fade" id="purchases-content">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="border-0 rounded-start">Bill #</th>
+                                        <th class="border-0">Supplier</th>
+                                        <th class="border-0 text-end">Amount</th>
+                                        <th class="border-0">Status</th>
+                                        <th class="border-0 rounded-end">Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for buy in recent_purchases %}
+                                    <tr>
+                                        <td class="fw-medium text-primary">{{ buy.bill_number }}</td>
+                                        <td class="fw-bold text-dark">{{ buy.vendor.name }}</td>
+                                        <td class="fw-bold text-end numbers-font">NPR {{ buy.grand_total|indian_intl }}</td>
+                                        <td>
+                                            {% if buy.status == 'Draft' %}
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary">Draft</span>
+                                            {% elif buy.status == 'Finalized' %}
+                                            <span class="badge bg-success bg-opacity-10 text-success">Finalized</span>
+                                            {% else %}
+                                            <span class="badge bg-danger bg-opacity-10 text-danger">Cancelled</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-muted small">
+                                            <span class="fw-medium text-dark">{{ buy.date|to_nepali:"%K-%n-%D" }}</span>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="5" class="text-center py-4 text-muted">No recent purchases.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <!-- Vouchers -->
+                    <div class="tab-pane fade" id="vouchers-content">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="border-0 rounded-start">Voucher #</th>
+                                        <th class="border-0">Type</th>
+                                        <th class="border-0">Description</th>
+                                        <th class="border-0 rounded-end">Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for v in recent_vouchers %}
+                                    <tr>
+                                        <td class="fw-medium text-primary">{{ v.voucher_number }}</td>
+                                        <td><span class="badge border text-dark">{{ v.voucher_type }}</span></td>
+                                        <td class="small">{{ v.description|truncatechars:40 }}</td>
+                                        <td class="text-muted small">{{ v.date|to_nepali:"%K-%n-%D" }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="4" class="text-center py-4 text-muted">No recent vouchers.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm p-4 rounded-4 bg-white mb-4">
+            <h5 class="fw-bold mb-4">Functional Actions</h5>
+            <div class="d-grid gap-3">
+                <a href="{% url 'sales:invoice_create' %}" class="btn border-0 text-start shadow-sm d-flex align-items-center p-3 rounded-3" style="background-color: #f8fafc; color: #0f172a;">
+                    <div class="bg-primary text-white rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                        <i class="bi bi-receipt h5 mb-0"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold">Global Sales Entry</div>
+                        <div class="small text-muted">New scientific invoice recording</div>
+                    </div>
+                </a>
+                
+                <a href="{% url 'purchases:purchase_create' %}" class="btn border-0 text-start shadow-sm d-flex align-items-center p-3 rounded-3" style="background-color: #f8fafc; color: #0f172a;">
+                    <div class="bg-danger text-white rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                        <i class="bi bi-bag-plus h5 mb-0"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold">Procurement Entry</div>
+                        <div class="small text-muted">Detailed supplier bill logging</div>
+                    </div>
+                </a>
+
+                <a href="{% url 'accounting:voucher_create' %}" class="btn border-0 text-start shadow-sm d-flex align-items-center p-3 rounded-3" style="background-color: #f8fafc; color: #0f172a;">
+                    <div class="bg-secondary text-white rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                        <i class="bi bi-journal-check h5 mb-0"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold">Financial Voucher</div>
+                        <div class="small text-muted">Create Journal/Payment/Receipt</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm p-4 rounded-4 bg-white">
+            <h6 class="fw-bold mb-3">Calendar Synchronization</h6>
+            <div class="bg-light p-3 rounded-3 d-flex align-items-center mb-2">
+                <i class="bi bi-calendar-event h4 mb-0 text-primary me-3"></i>
+                <div>
+                    <p class="mb-0 small text-muted">Today's Nepali Date (BS)</p>
+                    <p class="mb-0 fw-bold text-dark numbers-font">{{ current_nepali_date }}</p>
+                </div>
+            </div>
+            <div class="bg-light p-3 rounded-3 d-flex align-items-center">
+                <i class="bi bi-globe h4 mb-0 text-secondary me-3"></i>
+                <div>
+                    <p class="mb-0 small text-muted">Gregorian Date (AD)</p>
+                    <p class="mb-0 fw-bold text-dark numbers-font">{{ "now"|date:"Y-m-d" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Chart.js Setup with Scientific Formatting
+    document.addEventListener("DOMContentLoaded", function() {
+        const rawChartData = '{{ chart_data|escapejs }}';
+        if(rawChartData) {
+            const data = JSON.parse(rawChartData);
+            const ctx = document.getElementById('financialChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: 'Sales Revenue',
+                            data: data.sales,
+                            backgroundColor: '#6366f1',
+                            borderRadius: 6,
+                            barThickness: 15
+                        },
+                        {
+                            label: 'Purchase Expenses',
+                            data: data.purchases,
+                            backgroundColor: '#f43f5e',
+                            borderRadius: 6,
+                            barThickness: 15
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { font: { family: "'Inter'", weight: '600' } } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': NPR ' + new Intl.NumberFormat('en-IN').format(context.parsed.y);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { borderDash: [5, 5] },
+                            ticks: {
+                                callback: function(value) {
+                                    if(value >= 10000000) return (value / 10000000).toFixed(1) + 'C';
+                                    if(value >= 100000) return (value / 100000).toFixed(1) + 'L';
+                                    if(value >= 1000) return (value / 1000).toFixed(1) + 'k';
+                                    return value;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

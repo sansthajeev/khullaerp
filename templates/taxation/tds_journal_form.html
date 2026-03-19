@@ -1,0 +1,475 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+{% load django_bootstrap5 %}
+
+{% block title %}{% if edit_mode %}Edit TDS Journal{% else %}Record TDS Journal{% endif %} | Neponbiz{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link href="https://nepalidatepicker.sajanmaharjan.com.np/v5/nepali.datepicker/css/nepali.datepicker.v5.0.6.min.css" rel="stylesheet" type="text/css"/>
+<style>
+    .tds-form-card {
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        background: #fff;
+    }
+    .line-item-row {
+        transition: all 0.2s ease;
+        border-bottom: 1px solid #f1f5f9;
+        background: #fff;
+    }
+    .line-item-row:hover {
+        background-color: #fbfcfe;
+    }
+    .sticky-summary {
+        position: sticky;
+        bottom: 2rem;
+        z-index: 100;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        border-radius: 16px;
+        box-shadow: 0 -10px 20px rgba(0,0,0,0.02);
+    }
+    .table-header {
+        background: #f8fafc;
+        border-radius: 10px 10px 0 0;
+    }
+    .table-header th {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+        padding: 0.75rem 0.5rem;
+    }
+    .input-ghost {
+        border: 1px solid transparent;
+        background: transparent;
+        transition: all 0.2s;
+    }
+    .input-ghost:hover {
+        background: #f1f5f9;
+        border-color: #e2e8f0;
+    }
+    .input-ghost:focus {
+        background: #fff;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+    }
+    .compact-select {
+        font-size: 0.85rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 6px;
+    }
+    .compact-input {
+        font-size: 0.85rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 6px;
+    }
+    [x-cloak] { display: none !important; }
+    
+    .extra-small { font-size: 0.7rem; }
+    .mgmt-error {
+        color: #dc3545;
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+        padding: 1rem;
+        background: rgba(220, 53, 69, 0.05);
+        border-left: 4px solid #dc3545;
+        border-radius: 8px;
+    }
+    .field-error {
+        color: #dc3545;
+        font-size: 0.65rem;
+        margin-top: 2px;
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div x-data="tdsJournalEngine()" x-init="initEngine()" class="pb-5">
+    <form method="post" id="tdsJournalForm">
+        {% csrf_token %}
+        
+        <!-- Definitive Management Form (Manual Rendering) -->
+        <div x-ref="managementFields">
+            <input type="hidden" name="tds_lines-TOTAL_FORMS" :value="rows.length" id="id_tds_lines-TOTAL_FORMS">
+            <input type="hidden" name="tds_lines-INITIAL_FORMS" :value="initialFormCount" id="id_tds_lines-INITIAL_FORMS">
+            <input type="hidden" name="tds_lines-MIN_NUM_FORMS" value="0" id="id_tds_lines-MIN_NUM_FORMS">
+            <input type="hidden" name="tds_lines-MAX_NUM_FORMS" value="1000" id="id_tds_lines-MAX_NUM_FORMS">
+        </div>
+
+        {% if formset.management_form.errors or formset.non_form_errors %}
+            <div class="mgmt-error mb-4">
+                <h6 class="fw-bold mb-2">Form Validation Issues:</h6>
+                {{ formset.management_form.errors }}
+                {{ formset.non_form_errors }}
+            </div>
+        {% endif %}
+        
+        <div class="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center gap-3 mb-4">
+            <div>
+                <h2 class="fw-bold mb-1">{% if edit_mode %}Edit TDS Journal{% else %}Journal Entry (TDS){% endif %}</h2>
+                <p class="text-muted small mb-0">Record standard journals with automatic TDS compliance triggers</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'taxation:tds_journal_list' %}" class="btn btn-light rounded-3 px-3">Cancel</a>
+                <button type="submit" :disabled="totalDebit() !== totalCredit() || totalDebit() == 0" class="btn btn-premium-primary px-4 shadow-sm">Save Journal</button>
+            </div>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show mb-4" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Header Info -->
+        <div class="tds-form-card p-4 mb-4">
+            <h5 class="fw-bold mb-3 small text-uppercase letter-spacing-1 text-primary">Doc Info</h5>
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <label class="form-label fw-bold small text-muted text-uppercase">Transaction Date</label>
+                    <div class="d-flex gap-2">
+                         <div class="input-group input-group-sm">
+                             <span class="input-group-text bg-light fw-bold text-muted">BS</span>
+                             <input type="text" id="nepali-date-picker" 
+                                    x-model="bsDate"
+                                    class="form-control fw-medium text-primary" placeholder="YYYY-MM-DD" readonly>
+                         </div>
+                         <div class="input-group input-group-sm">
+                             <span class="input-group-text bg-light fw-bold text-muted">AD</span>
+                             <input type="date" name="date" id="id_date" 
+                                    x-model="adDate"
+                                    class="form-control form-control-sm fw-medium">
+                         </div>
+                    </div>
+                </div>
+                <div class="col-md-7">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Narration / Remarks</label>
+                    {{ form.narration }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Line Items -->
+        <div class="tds-form-card overflow-hidden mb-5">
+            <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-white">
+                <h5 class="fw-bold mb-0 small text-uppercase letter-spacing-1 text-primary">Journal Details</h5>
+                <button type="button" @click="addRow()" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                    <i class="bi bi-plus-circle me-1"></i> Add Row
+                </button>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-borderless align-middle mb-0">
+                    <thead class="table-header">
+                        <tr>
+                            <th style="width: 20%;" class="ps-4">Account / Ledger</th>
+                            <th style="width: 45%;">TDS / Subledger Details</th>
+                            <th style="width: 14%;" class="text-end">Debit (Dr)</th>
+                            <th style="width: 14%;" class="text-end">Credit (Cr)</th>
+                            <th style="width: 7%;" class="text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="(row, index) in rows" :key="row.id">
+                            <tr class="line-item-row" x-show="!row.deleted" :class="row.has_error ? 'bg-danger bg-opacity-10' : ''">
+                                <!-- Hidden ID for Existing Items -->
+                                <template x-if="row.db_id && String(row.db_id).indexOf('old-') === -1">
+                                    <input type="hidden" :name="'tds_lines-' + index + '-id'" :value="row.db_id">
+                                </template>
+                                <!-- Account Selection -->
+                                <td class="ps-4 py-3 align-top">
+                                    <select :name="'tds_lines-' + index + '-ledger'" 
+                                            class="form-select border-0 bg-transparent fw-medium py-1 compact-select" 
+                                            x-model="row.ledger_id" 
+                                            @change="row.subledger_type = getLedgerSubledgerType(row.ledger_id)"
+                                            required>
+                                        <option value="">Select Ledger...</option>
+                                        {% for l in ledgers %}
+                                            <option value="{{ l.id }}">{{ l.code }} - {{ l.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="mt-1 ps-1">
+                                        <span x-show="isTdsAccount(row.ledger_id)" class="badge bg-warning bg-opacity-10 text-warning extra-small rounded-pill">TDS</span>
+                                        <span x-show="hasSubledger(row.ledger_id)" class="badge bg-info bg-opacity-10 text-info extra-small rounded-pill">SL</span>
+                                    </div>
+                                    <template x-if="row.errors && row.errors.ledger">
+                                        <span class="field-error" x-text="row.errors.ledger[0]"></span>
+                                    </template>
+                                </td>
+
+                                <!-- Details Column -->
+                                <td class="py-3 align-top">
+                                    <div class="row g-2 align-items-center">
+                                        <!-- Subledger -->
+                                        <div class="col-12" x-show="row.subledger_type !== 'None' || isTdsAccount(row.ledger_id)">
+                                            
+                                            <div class="d-flex gap-2 mb-1">
+                                                <!-- Forced Subledger Type (Hidden) if Ledger enforces it -->
+                                                <input type="hidden" :name="'tds_lines-' + index + '-subledger_type'" :value="row.subledger_type" x-show="getLedgerSubledgerType(row.ledger_id) !== 'None'">
+                                                
+                                                <!-- Optional Subledger Type Selector (Only if Ledger doesn't enforce, but is TDS) -->
+                                                <div style="flex: 1;" x-show="getLedgerSubledgerType(row.ledger_id) === 'None' && isTdsAccount(row.ledger_id)">
+                                                    <select :name="getLedgerSubledgerType(row.ledger_id) === 'None' ? 'tds_lines-' + index + '-subledger_type' : ''" class="form-select form-select-sm compact-select border-secondary" x-model="row.subledger_type">
+                                                        <option value="None">No Subledger</option>
+                                                        <option value="Employee">Employee (Staff)</option>
+                                                        <option value="Contact">Contact (Vendor)</option>
+                                                    </select>
+                                                </div>
+
+                                                <div style="flex: 2;" x-show="row.subledger_type === 'Employee'">
+                                                    <select :name="'tds_lines-' + index + '-employee'" class="form-select form-select-sm compact-select border-warning" x-model="row.employee" :required="row.subledger_type === 'Employee'">
+                                                        <option value="">Select Employee...</option>
+                                                        {% for emp in employees %}
+                                                            <option value="{{ emp.id }}">{{ emp.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                    <template x-if="row.errors && row.errors.employee">
+                                                        <span class="field-error" x-text="row.errors.employee[0]"></span>
+                                                    </template>
+                                                </div>
+
+                                                <div style="flex: 2;" x-show="row.subledger_type === 'Contact'">
+                                                    <select :name="'tds_lines-' + index + '-contact'" class="form-select form-select-sm compact-select border-info" x-model="row.contact" :required="row.subledger_type === 'Contact'">
+                                                        <option value="">Select Partner/Vendor...</option>
+                                                        {% for contact in contacts %}
+                                                            <option value="{{ contact.id }}">{{ contact.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                    <template x-if="row.errors && row.errors.contact">
+                                                        <span class="field-error" x-text="row.errors.contact[0]"></span>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- TDS -->
+                                        <div class="col-12" x-show="isTdsAccount(row.ledger_id)">
+                                            <div class="d-flex gap-2 mb-1">
+                                                <div style="flex: 2;">
+                                                    <select :name="'tds_lines-' + index + '-tds_heading'" class="form-select form-select-sm compact-select border-warning" x-model="row.tds_heading" :required="isTdsAccount(row.ledger_id)">
+                                                        <option value="">TDS Heading...</option>
+                                                        {% for head in headings %}
+                                                            <option value="{{ head.id }}">{{ head.code }} - {{ head.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div style="flex: 1;">
+                                                    <select :name="'tds_lines-' + index + '-taxable_ledger'" class="form-select form-select-sm compact-select border-info" x-model="row.taxable_ledger" :required="isTdsAccount(row.ledger_id)">
+                                                        <option value="">Taxable Ledger...</option>
+                                                        {% for l in ledgers %}
+                                                            <option value="{{ l.id }}">{{ l.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div style="flex: 1;">
+                                                    <input type="number" :name="'tds_lines-' + index + '-payment_amount'" x-model="row.payment_amount" class="form-control form-control-sm compact-input text-end" placeholder="Base Amt">
+                                                </div>
+                                            </div>
+                                            <template x-if="row.errors && row.errors.tds_heading">
+                                                <span class="field-error" x-text="row.errors.tds_heading[0]"></span>
+                                            </template>
+                                        </div>
+
+                                        <div class="col-12 text-muted extra-small fst-italic ps-3" x-show="!isTdsAccount(row.ledger_id) && !hasSubledger(row.ledger_id) && row.ledger_id">
+                                            No additional details required
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <!-- Amounts -->
+                                <td class="py-3 px-2 align-top">
+                                    <input type="number" :name="'tds_lines-' + index + '-debit'" x-model.number="row.debit" step="0.01" class="form-control input-ghost text-end fw-bold numbers-font py-1" placeholder="0.00">
+                                    <template x-if="row.errors && row.errors.debit">
+                                        <span class="field-error text-end" x-text="row.errors.debit[0]"></span>
+                                    </template>
+                                </td>
+                                <td class="py-3 px-2 align-top">
+                                    <input type="number" :name="'tds_lines-' + index + '-credit'" x-model.number="row.credit" step="0.01" class="form-control input-ghost text-end fw-bold numbers-font py-1" placeholder="0.00">
+                                    <template x-if="row.errors && row.errors.credit">
+                                        <span class="field-error text-end" x-text="row.errors.credit[0]"></span>
+                                    </template>
+                                </td>
+
+                                <!-- Action -->
+                                <td class="text-center py-3 pe-4 align-top">
+                                    <button type="button" @click="removeRow(index)" class="btn btn-link text-danger p-0" x-show="rows.filter(r => !r.deleted).length > 2">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
+                                    <input type="checkbox" :name="'tds_lines-' + index + '-DELETE'" x-model="row.deleted" style="display: none;">
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Totals Bar -->
+        <div class="sticky-summary p-3 px-4 d-flex justify-content-between align-items-center">
+            <div class="d-flex gap-4">
+                <div>
+                    <span class="extra-small text-muted text-uppercase fw-bold letter-spacing-1 d-block">Total Dr</span>
+                    <span class="h4 mb-0 fw-bold text-dark numbers-font" x-text="formatNumber(totalDebit())">0.00</span>
+                </div>
+                <div>
+                    <span class="extra-small text-muted text-uppercase fw-bold letter-spacing-1 d-block">Total Cr</span>
+                    <span class="h4 mb-0 fw-bold text-dark numbers-font" x-text="formatNumber(totalCredit())">0.00</span>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <div x-show="totalDebit() !== totalCredit()" class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 rounded-pill small">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i> Mismatch: <span x-text="formatNumber(Math.abs(totalDebit() - totalCredit()))"></span>
+                </div>
+                <div x-show="totalDebit() === totalCredit() && totalDebit() > 0" class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill small">
+                    <i class="bi bi-check-circle-fill me-1"></i> Balanced
+                </div>
+                <button type="submit" :disabled="totalDebit() !== totalCredit() || totalDebit() == 0" class="btn btn-premium-primary px-5 shadow-sm">Save TDS Journal</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script src="https://nepalidatepicker.sajanmaharjan.com.np/v5/nepali.datepicker/js/nepali.datepicker.v5.0.6.min.js" type="text/javascript"></script>
+<script>
+    function tdsJournalEngine() {
+        return {
+            rows: [],
+            ledgers_metadata: [],
+            adDate: '{% if form.date.value %}{{ form.date.value|date:"Y-m-d" }}{% endif %}',
+            bsDate: '',
+            initialFormCount: 0,
+
+            initEngine() {
+                try {
+                    this.ledgers_metadata = JSON.parse('{{ ledgers_data|safe|escapejs }}');
+                } catch (e) { console.error("Metadata error", e); }
+
+                if (!this.adDate) {
+                    this.adDate = new Date().toISOString().split('T')[0];
+                }
+                
+                // Definitive Re-population Logic
+                const preExisting = JSON.parse('{{ existing_lines|safe|escapejs }}');
+                if (preExisting && preExisting.length > 0) {
+                    this.rows = preExisting.map(r => ({
+                        ...r,
+                        db_id: r.id, // Critical: Store the real database ID
+                        id: Date.now() + Math.random(), // Reactivity ID
+                        has_error: r.errors && Object.keys(r.errors).length > 0
+                    }));
+                    this.initialFormCount = preExisting.length; // Count existing effectively
+                } else {
+                    this.addRow();
+                    this.addRow();
+                    this.addRow();
+                }
+
+                this.waitForLibrary(() => {
+                    this.updateBSFromAD();
+                    this.initNepaliPicker();
+                    this.initSearchableDropdowns();
+                });
+
+                this.$watch('adDate', () => this.waitForLibrary(() => this.updateBSFromAD()));
+            },
+
+            initSearchableDropdowns() {
+                this.$nextTick(() => {
+                    document.querySelectorAll('select:not(#row-template select)').forEach(el => {
+                        if (!el.tomselect) {
+                            new TomSelect(el, {
+                                create: false,
+                                sortField: {field: "text", direction: "asc"},
+                                dropdownParent: 'body'
+                            });
+                        }
+                    });
+                });
+            },
+
+            addRow() {
+                this.rows.push({
+                    id: Date.now() + Math.random(),
+                    ledger_id: '',
+                    debit: 0.0,
+                    credit: 0.0,
+                    employee: '',
+                    contact: '',
+                    tds_heading: '',
+                    taxable_ledger: '',
+                    payment_amount: 0.0,
+                    subledger_type: 'None',
+                    deleted: false,
+                    db_id: null,
+                    errors: {}
+                });
+                this.initSearchableDropdowns();
+            },
+            removeRow(index) {
+                this.rows[index].deleted = true;
+            },
+            totalDebit() {
+                return this.rows.reduce((sum, row) => sum + (row.deleted ? 0 : (parseFloat(row.debit) || 0)), 0);
+            },
+            totalCredit() {
+                return this.rows.reduce((sum, row) => sum + (row.deleted ? 0 : (parseFloat(row.credit) || 0)), 0);
+            },
+            formatNumber(num) {
+                return new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+            },
+            getLedgerObj(id) {
+                if (!id) return null;
+                return this.ledgers_metadata.find(l => l.id == id);
+            },
+            isTdsAccount(id) {
+                const l = this.getLedgerObj(id);
+                return l ? l.is_tds : false;
+            },
+            hasSubledger(id) {
+                const l = this.getLedgerObj(id);
+                return l ? (l.subledger_type !== 'None' && l.subledger_type !== '') : false;
+            },
+            getLedgerSubledgerType(id) {
+                const l = this.getLedgerObj(id);
+                return l ? l.subledger_type : 'None';
+            },
+
+            // Nepali Functions
+            waitForLibrary(callback) {
+                if (typeof NepaliFunctions !== 'undefined') callback();
+                else setTimeout(() => this.waitForLibrary(callback), 100);
+            },
+            updateBSFromAD() {
+                if (this.adDate && typeof NepaliFunctions !== 'undefined') {
+                    const arr = this.adDate.split("-");
+                    const bs = NepaliFunctions.AD2BS({ year: parseInt(arr[0]), month: parseInt(arr[1]), day: parseInt(arr[2]) });
+                    this.bsDate = bs.year + "-" + String(bs.month).padStart(2,'0') + "-" + String(bs.day).padStart(2,'0');
+                }
+            },
+            updateADFromBS() {
+                if (this.bsDate && typeof NepaliFunctions !== 'undefined') {
+                    const arr = this.bsDate.split("-");
+                    const ad = NepaliFunctions.BS2AD({ year: parseInt(arr[0]), month: parseInt(arr[1]), day: parseInt(arr[2]) });
+                    this.adDate = ad.year + "-" + String(ad.month).padStart(2,'0') + "-" + String(ad.day).padStart(2,'0');
+                }
+            },
+            initNepaliPicker() {
+                const el = document.getElementById("nepali-date-picker");
+                if (el && typeof el.nepaliDatePicker === 'function') {
+                    el.nepaliDatePicker({
+                        onSelect: (data) => { this.bsDate = data.value; this.updateADFromBS(); }
+                    });
+                }
+            }
+        }
+    }
+</script>
+{% endblock %}

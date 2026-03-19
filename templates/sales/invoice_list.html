@@ -1,0 +1,82 @@
+{% extends 'admin/base.html' %}
+{% load nepali_dates humanize %}
+
+{% block title %}Sales Invoices | ERP Neponbiz{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Sales Invoices</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'users:dashboard' %}" class="text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Sales</li>
+            </ol>
+        </nav>
+    </div>
+    <a href="{% url 'sales:invoice_create' %}" class="btn btn-primary d-flex align-items-center justify-content-center">
+        <i class="bi bi-plus-lg me-2"></i> New Sales Invoice
+    </a>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4 border-0">Invoice #</th>
+                    <th class="border-0">Customer</th>
+                    <th class="border-0">BS Date</th>
+                    <th class="border-0">AD Date</th>
+                    <th class="border-0 text-end">Amount</th>
+                    <th class="border-0 text-center">Status</th>
+                    <th class="pe-4 border-0 text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invoice in invoices %}
+                <tr>
+                    <td class="ps-4 fw-bold text-dark">{{ invoice.invoice_number }}</td>
+                    <td class="fw-medium text-dark">{{ invoice.customer.name }}</td>
+                    <td class="text-dark fw-medium">{{ invoice.date|to_nepali:"%K-%n-%D" }}</td>
+                    <td class="text-muted">{{ invoice.date|date:"Y-m-d" }}</td>
+                    <td class="text-end fw-bold">NPR {{ invoice.grand_total|intcomma }}</td>
+                    <td class="text-center">
+                        {% if invoice.status == 'Draft' %}
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary">Draft</span>
+                        {% elif invoice.status == 'Finalized' %}
+                        <span class="badge bg-success bg-opacity-10 text-success">Finalized</span>
+                        {% else %}
+                        <span class="badge bg-danger bg-opacity-10 text-danger">Cancelled</span>
+                        {% endif %}
+                    </td>
+                    <td class="pe-4 text-end">
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light border-0" data-bs-toggle="dropdown" data-bs-boundary="viewport">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                <li><a class="dropdown-item" href="{% url 'sales:invoice_detail' invoice.pk %}"><i class="bi bi-eye me-2"></i> View</a></li>
+                                <li><a class="dropdown-item" href="{% url 'sales:invoice_edit' invoice.pk %}"><i class="bi bi-pencil me-2"></i> Edit</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="{% url 'sales:invoice_delete' invoice.pk %}"><i class="bi bi-trash me-2"></i> Delete</a></li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-5">
+                        <div class="py-4">
+                            <i class="bi bi-receipt-cutoff h1 text-muted opacity-25 mb-3 d-block"></i>
+                            <p class="text-muted">No sales invoices found.</p>
+                            <a href="{% url 'sales:invoice_create' %}" class="btn btn-outline-primary btn-sm">Create your first invoice</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

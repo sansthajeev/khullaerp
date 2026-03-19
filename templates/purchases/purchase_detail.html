@@ -1,0 +1,160 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Purchase Bill | {{ purchase.bill_number }}{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center gap-3 mb-4 no-print">
+    <div>
+        <h2 class="fw-bold mb-1">Purchase Bill #{{ purchase.bill_number }}</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'users:dashboard' %}" class="text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'purchases:purchase_list' %}" class="text-decoration-none">Purchases</a></li>
+                <li class="breadcrumb-item active">Bill Detail</li>
+            </ol>
+        </nav>
+    </div>
+    <div class="d-flex gap-2">
+        <button onclick="window.print()" class="btn btn-outline-primary">
+            <i class="bi bi-printer me-2"></i> Print
+        </button>
+        {% if purchase.status == 'Draft' %}
+            <form action="{% url 'purchases:finalize_purchase' pk=purchase.pk %}" method="POST" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success shadow-sm">
+                    <i class="bi bi-check-circle me-2"></i> Finalize Bill
+                </button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card border-0 shadow-sm rounded-4 p-5 voucher-print bg-white">
+            <!-- Header Info -->
+            <div class="row mb-5 border-bottom pb-4">
+                <div class="col-6">
+                    <h1 class="fw-bold text-primary mb-1">PURCHASE BILL</h1>
+                    <div class="text-muted small">Vendor Invoice Document</div>
+                    <div class="mt-4">
+                        <h6 class="text-uppercase small fw-bold text-muted mb-1">Vendor Detail:</h6>
+                        <div class="fw-bold fs-5 text-dark">{{ purchase.vendor.name }}</div>
+                        <div class="text-muted">{{ purchase.vendor.address|default:"No address provided" }}</div>
+                        <div class="text-muted">PAN/VAT: {{ purchase.vendor.pan_number|default:"N/A" }}</div>
+                    </div>
+                </div>
+                <div class="col-6 text-end">
+                    <div class="fw-bold text-dark fs-4">#{{ purchase.bill_number }}</div>
+                    <div class="text-muted small mb-3">Vendor Ref: {{ purchase.vendor_invoice_number|default:"N/A" }}</div>
+                    <div class="mb-1 text-muted">Bill Date: <span class="text-dark fw-bold">{{ purchase.date }}</span></div>
+                    <div class="mb-1 text-muted">Due Date: <span class="text-danger fw-bold">{{ purchase.due_date|default:"Immediate" }}</span></div>
+                    <div class="mt-3">
+                        <span class="badge {% if purchase.status == 'Draft' %}bg-warning{% elif purchase.status == 'Finalized' %}bg-success{% else %}bg-danger{% endif %} bg-opacity-10 text-{% if purchase.status == 'Draft' %}warning{% elif purchase.status == 'Finalized' %}success{% else %}danger{% endif %} px-4 py-2 rounded-pill">
+                            {{ purchase.status }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Items -->
+            <div class="mb-5">
+                <table class="table table-bordered align-middle">
+                    <thead class="bg-light text-muted small text-uppercase fw-bold">
+                        <tr>
+                            <th class="ps-3 border-0">Item Description</th>
+                            <th class="text-center border-0" style="width: 100px;">Qty</th>
+                            <th class="text-end border-0" style="width: 150px;">Unit Price (NPR)</th>
+                            <th class="text-end border-0" style="width: 100px;">Tax %</th>
+                            <th class="text-end border-0" style="width: 100px;">TDS %</th>
+                            <th class="text-end border-0" style="width: 120px;">TDS Amt (NPR)</th>
+                            <th class="text-end pe-3 border-0" style="width: 150px;">Total (NPR)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in purchase.items.all %}
+                        <tr>
+                            <td class="ps-3 border-start-0 border-end-0">
+                                <div class="fw-bold text-dark">{{ item.item.name }}</div>
+                                <div class="extra-small text-muted">{{ item.description }}</div>
+                            </td>
+                            <td class="text-center border-start-0 border-end-0">{{ item.quantity }}</td>
+                            <td class="text-end border-start-0 border-end-0">{{ item.unit_price|intcomma }}</td>
+                            <td class="text-end border-start-0 border-end-0">{{ item.tax_rate }}%</td>
+                            <td class="text-end border-start-0 border-end-0">{{ item.tds_rate|default:"0" }}%</td>
+                            <td class="text-end border-start-0 border-end-0 text-danger">{{ item.tds_amount|intcomma }}</td>
+                            <td class="text-end pe-3 border-start-0 border-end-0 fw-bold">{{ item.amount|intcomma }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Summary -->
+            <div class="row justify-content-end mb-5">
+                <div class="col-lg-4">
+                    <div class="bg-light rounded-4 p-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Sub Total:</span>
+                            <span class="fw-bold">NPR {{ purchase.sub_total|intcomma }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Input VAT:</span>
+                            <span class="fw-bold">NPR {{ purchase.tax_amount|intcomma }}</span>
+                        </div>
+                        {% if purchase.total_tds > 0 %}
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">TDS Deducted:</span>
+                            <span class="fw-bold text-danger">- NPR {{ purchase.total_tds|intcomma }}</span>
+                        </div>
+                        {% endif %}
+                        {% if purchase.discount_amount > 0 %}
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Discount:</span>
+                            <span class="fw-bold text-danger">- NPR {{ purchase.discount_amount|intcomma }}</span>
+                        </div>
+                        {% endif %}
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <h5 class="fw-bold mb-0">Total Payable:</h5>
+                            <h4 class="fw-bold text-primary mb-0">NPR {{ purchase.net_payable|intcomma }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Narration -->
+            {% if purchase.notes %}
+            <div class="mb-5">
+                <h6 class="fw-bold text-muted text-uppercase small mb-2">Notes</h6>
+                <div class="p-3 bg-light rounded-3 text-dark italic small">
+                    {{ purchase.notes }}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Footer Signatures -->
+            <div class="row mt-5 pt-5 text-center">
+                <div class="col-4">
+                    <div class="border-top pt-2 small text-muted">Store In-charge</div>
+                </div>
+                <div class="col-4">
+                    <div class="border-top pt-2 small text-muted">Accountant</div>
+                </div>
+                <div class="col-4">
+                    <div class="border-top pt-2 small text-muted">Manager / Authorized</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style media="print">
+    .no-print { display: none !important; }
+    body { background: white !important; }
+    .card { box-shadow: none !important; border: 1px solid #eee !important; }
+    .voucher-print { padding: 0 !important; }
+</style>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends 'admin/base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}Confirm Deletion | ERP Neponbiz{% endblock %}
+
+{% block admin_content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-danger text-white py-3 px-4">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i> Confirm Purchase Bill Deletion</h5>
+                </div>
+                <div class="card-body p-4 p-lg-5">
+                    <p class="lead mb-4">Are you sure you want to delete purchase bill <strong>{{ purchase.bill_number }}</strong>?</p>
+                    
+                    <div class="bg-light p-3 rounded-3 mb-4">
+                        <ul class="list-unstyled mb-0 small">
+                            <li><strong>Date:</strong> {{ purchase.date }}</li>
+                            <li><strong>Vendor:</strong> {{ purchase.vendor.name }}</li>
+                            <li><strong>Grand Total:</strong> {{ purchase.grand_total }}</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-warning border-0 small mb-4">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <strong>Important:</strong> This will also permanently delete the associated accounting Voucher and any stock updates related to this bill.
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-danger px-4 py-2 fw-bold flex-grow-1">Yes, Delete Purchase Bill</button>
+                            <a href="{% url 'purchases:purchase_list' %}" class="btn btn-outline-secondary px-4 py-2 fw-bold">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

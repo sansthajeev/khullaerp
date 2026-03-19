@@ -1,0 +1,80 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Manage Companies | ERP Neponbiz{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Manage Companies</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'users:dashboard' %}" class="text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Companies</li>
+            </ol>
+        </nav>
+    </div>
+    <a href="{% url 'customers:client_create' %}" class="btn btn-primary d-flex align-items-center justify-content-center">
+        <i class="bi bi-plus-lg me-2"></i> Register New Company
+    </a>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4 border-0">Company Name</th>
+                    <th class="border-0">Schema</th>
+                    <th class="border-0">Primary Domain</th>
+                    <th class="border-0 text-center">Created On</th>
+                    <th class="pe-4 border-0 text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for client in clients %}
+                <tr>
+                    <td class="ps-4">
+                        <div class="fw-bold text-dark">{{ client.name }}</div>
+                    </td>
+                    <td><code>{{ client.schema_name }}</code></td>
+                    <td>
+                        {% for domain in client.domains.all %}
+                        <a href="http://{{ domain.domain }}:8000" target="_blank" class="text-decoration-none">
+                            {{ domain.domain }} <i class="bi bi-box-arrow-up-right extra-small"></i>
+                        </a>
+                        {% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td class="text-center">{{ client.created_on }}</td>
+                    <td class="pe-4 text-end">
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-primary border-0 rounded-pill" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2">
+                                <li>
+                                    <h6 class="dropdown-header small text-uppercase fw-bold">Management</h6>
+                                </li>
+                                <li><a class="dropdown-item" href="{% url 'customers:tenant_user_list' client.pk %}"><i class="bi bi-people me-2"></i> Manage Users</a></li>
+                                <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i> Edit Company</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-trash me-2"></i> Suspend</a></li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-5">
+                        <div class="py-4">
+                            <i class="bi bi-buildings h1 text-muted opacity-25 mb-3 d-block"></i>
+                            <p class="text-muted">No tenant companies registered yet.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

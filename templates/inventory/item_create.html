@@ -1,0 +1,162 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}{% if is_edit %}Edit Item{% else %}Add New Item{% endif %} | ERP Neponbiz{% endblock %}
+
+{% block admin_content %}
+<div class="mb-4">
+    <h2 class="fw-bold mb-1">{% if is_edit %}Edit Item: {{ item.name }}{% else %}Add New Item{% endif %}</h2>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'users:dashboard' %}" class="text-decoration-none">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'inventory:item_list' %}" class="text-decoration-none">Inventory</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% if is_edit %}Edit{% else %}New{% endif %} Item</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="row" x-data="itemForm()">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
+            <form method="post">
+                {% csrf_token %}
+                <div class="row g-4">
+                    <div class="col-md-5">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Item Name</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-7">
+                        <div class="row g-3">
+                            <div class="col-md-5">
+                                <label class="form-label fw-bold small text-muted text-uppercase">SKU / Code</label>
+                                {{ form.sku }}
+                                {% if form.sku.errors %}<div class="text-danger small mt-1">{{ form.sku.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-7">
+                                <label class="form-label fw-bold small text-muted text-uppercase d-flex justify-content-between">
+                                    <span>Custom Barcode (Optional)</span>
+                                    <button type="button" @click="generateBarcode()" class="btn btn-link p-0 extra-small fw-bold text-decoration-none">
+                                        <i class="bi bi-magic me-1"></i> Auto-Generate
+                                    </button>
+                                </label>
+                                {{ form.barcode }}
+                                {% if form.barcode.errors %}<div class="text-danger small mt-1">{{ form.barcode.errors }}</div>{% endif %}
+                                <div class="form-text extra-small mt-1">Leave empty to auto-generate a unique code on save.</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Item Type</label>
+                        {{ form.item_type }}
+                        {% if form.item_type.errors %}<div class="text-danger small mt-1">{{ form.item_type.errors }}</div>{% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Unit of Measurement</label>
+                        {{ form.uom }}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Valuation Method</label>
+                        {{ form.valuation_method }}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Purchase Price (NPR)</label>
+                        <div class="input-group">
+                            <span class="input-group-text border-0 bg-light text-muted">NPR</span>
+                            {{ form.purchase_price }}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Sales Price (NPR)</label>
+                        <div class="input-group">
+                            <span class="input-group-text border-0 bg-light text-muted">NPR</span>
+                            {{ form.sales_price }}
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-check form-switch mt-4">
+                            {{ form.is_taxable }}
+                            <label class="form-check-label fw-bold small text-muted text-uppercase">Is Taxable</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Tax Rate (%)</label>
+                        {{ form.tax_rate }}
+                    </div>
+                    
+                    <div class="col-12 mt-4">
+                        <h6 class="fw-bold mb-3"><i class="bi bi-diagram-3-fill me-2"></i>Advanced Accounting Mappings</h6>
+                        <div class="row g-3 bg-light rounded-4 p-3 border">
+                             <div class="col-md-4">
+                                 <label class="form-label fw-bold small text-muted text-uppercase">Sales</label>
+                                 {{ form.sales_account }}
+                                 <div class="form-text extra-small mt-1">Leave blank to use global default</div>
+                             </div>
+                             <div class="col-md-4">
+                                 <label class="form-label fw-bold small text-muted text-uppercase">Purchase</label>
+                                 {{ form.purchase_account }}
+                                 <div class="form-text extra-small mt-1">Leave blank to use global default</div>
+                             </div>
+                             <div class="col-md-4">
+                                 <label class="form-label fw-bold small text-muted text-uppercase">COGS</label>
+                                 {{ form.cogs_account }}
+                                 <div class="form-text extra-small mt-1">Leave blank to use global default</div>
+                             </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-12 mt-4">
+                        <hr class="my-4">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'inventory:item_list' %}" class="btn btn-light px-4">Cancel</a>
+                            <button type="submit" class="btn btn-primary px-5">{% if is_edit %}Update Item{% else %}Save Item{% endif %}</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="bg-primary bg-opacity-10 rounded-4 p-4 h-100">
+            <h5 class="fw-bold mb-3"><i class="bi bi-info-circle me-2"></i> Inventory Tip</h5>
+            <p class="small text-muted mb-4">Accurate stock valuation helps in precise profit calculation. FIFO is commonly used in retail businesses in Nepal.</p>
+            
+            <p class="small text-muted fw-bold text-uppercase mb-2">Required Fields</p>
+            <ul class="small text-muted ps-3">
+                <li>Item Name & SKU are mandatory</li>
+                <li>UOM is required for stock tracking</li>
+                <li>Price is used for auto-voucher generation</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function itemForm() {
+    return {
+        generateBarcode() {
+            // Generate a 12-digit code starting with 20
+            const randomDigits = Math.floor(Math.random() * 9000000000) + 1000000000;
+            const barcode = '20' + randomDigits;
+            // Target the barcode field by ID (Django names it id_barcode)
+            const field = document.getElementById('id_barcode');
+            if (field) {
+                field.value = barcode;
+                // Visual feedback
+                field.classList.add('is-valid');
+                setTimeout(() => field.classList.remove('is-valid'), 1000);
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,616 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+{% load django_bootstrap5 %}
+
+{% block title %}Voucher Workspace | ERP Neponbiz{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link href="https://nepalidatepicker.sajanmaharjan.com.np/v5/nepali.datepicker/css/nepali.datepicker.v5.0.6.min.css" rel="stylesheet" type="text/css"/>
+<style>
+    :root {
+        --ws-bg: #f8fafc;
+        --ws-card: #ffffff;
+        --ws-accent: #4f46e5;
+        --ws-border: #e2e8f0;
+        --ws-text-muted: #64748b;
+        --ws-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    body { background-color: var(--ws-bg); }
+
+    .workspace-container {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 1.5rem;
+    }
+
+    .ws-card {
+        background: var(--ws-card);
+        border: 1px solid var(--ws-border);
+        border-radius: 16px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+        transition: all 0.3s ease;
+    }
+
+    /* Scientific Precision Grid */
+    .accounting-table {
+        table-layout: fixed;
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .accounting-table thead th {
+        background: #f8fafc;
+        font-size: 0.7rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #475569;
+        padding: 16px 20px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .accounting-table tbody td {
+        padding: 8px 12px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+
+    .form-control-ws {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        background-color: #ffffff;
+    }
+
+    .form-control-ws:focus {
+        border-color: var(--ws-accent);
+        background-color: #ffffff;
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        z-index: 10;
+        position: relative;
+    }
+
+    .bg-light-focus:focus {
+        background-color: #ffffff !important;
+    }
+
+    .sticky-top-actions {
+        position: sticky;
+        top: 1.5rem;
+        z-index: 100;
+    }
+
+    .numbers-font {
+        font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
+        letter-spacing: -0.02em;
+    }
+
+    .alert-soft-danger {
+        background-color: #fef2f2;
+        border: 1px solid #fee2e2;
+        color: #991b1b;
+    }
+
+    .shadow-inner {
+        box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+    }
+
+    .ledger-select-wrapper .ts-control {
+        border: 1px solid #e2e8f0 !important;
+        background-color: #f8fafc !important;
+        padding: 0.75rem 1rem !important;
+        border-radius: 12px !important;
+        font-weight: 600 !important;
+    }
+    
+    .ledger-select-wrapper .ts-control:focus {
+        background-color: #ffffff !important;
+        border-color: var(--ws-accent) !important;
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 20px -5px rgba(79, 70, 229, 0.2);
+    }
+    
+    .letter-spacing-1 { letter-spacing: 0.05em; }
+    .extra-small { font-size: 0.65rem; }
+    
+    .slicer-pill {
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        white-space: nowrap;
+    }
+    .slicer-pill:hover {
+        transform: translateY(-1px);
+        border-color: var(--ws-accent);
+    }
+    .slicer-pill-active {
+        background: var(--ws-accent);
+        color: white;
+        border-color: var(--ws-accent);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+        height: 6px;
+        width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    /* Viewport height optimization */
+    .voucher-table-container {
+        max-height: calc(100vh - 280px);
+        min-height: 250px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+    }
+
+    .accounting-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        background: #f8fafc;
+        box-shadow: inset 0 -2px 0 #e2e8f0;
+    }
+
+    @media (max-width: 991.98px) {
+        .voucher-table-container {
+            max-height: none;
+        }
+    }
+
+    /* Compact UI Adjustments */
+    textarea[name="narration"] {
+        height: 60px !important;
+        min-height: 60px !important;
+        resize: none;
+    }
+    .compact-input {
+        padding: 0.35rem 0.75rem !important;
+        font-size: 0.85rem !important;
+    }
+    .ws-nowrap { white-space: nowrap; }
+    
+    .ledger-select-wrapper .ts-control {
+        min-height: 38px !important;
+    }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="workspace-container pb-0" x-data="voucherEngine()" x-init="initEngine()" id="voucher-workspace">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-end mb-2">
+        <div class="d-flex align-items-center gap-3">
+            <h1 class="h4 fw-bold mb-0">{% if voucher %}Edit{% else %}New{% endif %} <span class="text-indigo" x-text="vType" style="color: var(--ws-accent);"></span></h1>
+            <div :class="isBalanced ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'" class="px-2 py-1 rounded-2 extra-small fw-bold border border-success-subtle d-flex align-items-center">
+                <i :class="isBalanced ? 'bi bi-check-circle-fill' : 'bi bi-exclamation-triangle-fill'" class="me-1"></i>
+                <span x-text="isBalanced ? 'BALANCED' : 'UNBALANCED'"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Slicer Section -->
+    <div class="ws-card p-2 mb-2 shadow-sm border-0 bg-white" style="border-radius: 12px;">
+        <div class="d-flex align-items-center gap-2 overflow-x-auto custom-scrollbar">
+            <div class="me-2 d-none d-md-block">
+                <span class="extra-small fw-bold text-muted text-uppercase letter-spacing-1">Type:</span>
+            </div>
+            <div class="d-flex gap-1">
+                <template x-for="type in ['Payment', 'Receipt', 'Journal', 'Contra', 'Sales', 'Purchase']">
+                    <div class="slicer-pill px-3 py-1 rounded-pill fw-bold extra-small transition-all border d-flex align-items-center gap-1 cursor-pointer"
+                         :class="vType === type ? 'slicer-pill-active' : 'bg-light text-muted border-transparent'"
+                         @click="vType = type">
+                         <span x-text="type"></span>
+                    </div>
+                </template>
+            </div>
+            <div class="ms-auto border-start ps-2 d-none d-xl-block">
+                <p class="text-muted extra-small mb-0 fst-italic" x-text="typeDescription"></p>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" id="voucherForm" @submit="handleSubmit($event)">
+        {% csrf_token %}
+        
+        <!-- Top Metadata Section -->
+        <div class="row g-2 mb-2">
+            <!-- Date Selection -->
+            <div class="col-md-3">
+                <div class="ws-card p-2 h-100 border-0 shadow-sm" style="border-radius: 12px;">
+                    <h6 class="fw-bold mb-2 text-uppercase extra-small text-muted letter-spacing-1">Effective Date</h6>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="extra-small fw-bold text-muted mb-0 ws-nowrap" style="width: 32px;">A.D.</label>
+                            <input type="date" name="date" class="form-control compact-input border-0 bg-light rounded-2 flex-grow-1" x-model="adDate" id="ad_date">
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="extra-small fw-bold text-muted mb-0 ws-nowrap" style="width: 32px;">B.S.</label>
+                            <input type="text" class="form-control compact-input border-0 bg-light rounded-2 flex-grow-1" id="nepali-date-picker" x-model="bsDate" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Specialized Account Header & Narration -->
+            <div class="col-md-5">
+                <div class="ws-card p-2 h-100 border-0 shadow-sm d-flex flex-column gap-2 justify-content-center" style="border-radius: 12px;">
+                    <div x-show="isSpecialized" x-transition class="d-flex align-items-center gap-2">
+                        <label class="extra-small fw-bold text-muted text-uppercase mb-0 ws-nowrap" style="width: 65px;">Account</label>
+                        <div class="ledger-select-wrapper flex-grow-1" style="min-width: 0;">
+                            {{ form.cash_bank_ledger }}
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-start gap-2 h-100">
+                        <label class="extra-small fw-bold text-muted text-uppercase mb-0 pt-2 ws-nowrap" style="width: 65px;">Narration</label>
+                        <div class="flex-grow-1 h-100">
+                            {{ form.narration }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary & Buttons -->
+            <div class="col-md-4">
+                <div class="ws-card p-2 h-100 border-0 shadow-sm d-flex flex-column justify-content-between" style="border-radius: 12px;">
+                    <div class="d-flex justify-content-between align-items-center px-2 mb-2 mt-1">
+                        <div class="text-center">
+                            <div class="extra-small fw-bold text-muted mb-1 text-uppercase">Debits</div>
+                            <div class="fw-bold numbers-font text-dark small" x-text="totalDebit.toLocaleString(undefined, {minimumFractionDigits:2})">0.00</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="extra-small fw-bold text-muted mb-1 text-uppercase">Credits</div>
+                            <div class="fw-bold numbers-font text-dark small" x-text="totalCredit.toLocaleString(undefined, {minimumFractionDigits:2})">0.00</div>
+                        </div>
+                        <div class="text-center px-2 py-1 rounded-3" :class="isBalanced ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'">
+                            <div class="extra-small fw-bold mb-1 text-uppercase" x-text="isBalanced ? 'Balanced' : 'Difference'"></div>
+                            <div class="fw-bold numbers-font small" x-text="Math.abs(totalDebit - totalCredit).toLocaleString(undefined, {minimumFractionDigits:2})">0.00</div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-sm btn-indigo flex-grow-1 fw-bold rounded-2 shadow-sm d-flex align-items-center justify-content-center gap-1 py-2" :disabled="!isBalanced || totalDebit === 0">
+                            <i class="bi bi-shield-check"></i> Post Voucher
+                        </button>
+                        <button type="button" @click="window.print()" class="btn btn-sm btn-light fw-bold rounded-2 shadow-sm text-muted px-3" x-show="totalDebit > 0">
+                            <i class="bi bi-printer"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Validation Messages -->
+        <div x-show="!isBalanced && totalDebit > 0" x-cloak class="alert alert-soft-danger border-0 shadow-sm small rounded-3 px-3 py-2 mb-2 d-flex align-items-center">
+            <div class="bg-danger text-white rounded-circle p-1 me-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
+                <i class="bi bi-exclamation-triangle-fill" style="font-size: 0.75rem;"></i>
+            </div>
+            <div>
+                <span class="fw-bold text-danger">Voucher Out of Balance:</span> Off by <span class="fw-bold numbers-font" x-text="Math.abs(totalDebit - totalCredit).toLocaleString(undefined, {minimumFractionDigits:2})"></span>. Both columns must match.
+            </div>
+        </div>
+
+        <!-- Main Accounting Grid -->
+        <div class="row">
+            <div class="col-12">
+                <div class="ws-card border-0 shadow-sm" style="border-radius: 12px; margin-bottom: 0;">
+                    <div class="px-3 py-2 border-bottom d-flex justify-content-between align-items-center bg-white" style="border-top-left-radius: 12px; border-top-right-radius: 12px;">
+                        <div>
+                            <h6 class="fw-bold mb-0 text-uppercase extra-small text-muted letter-spacing-1">Transaction Lines</h6>
+                        </div>
+                        <button type="button" @click="addRow()" class="btn btn-sm btn-indigo px-3 rounded-pill extra-small fw-bold shadow-sm">
+                            <i class="bi bi-plus-lg me-1"></i> Add Account
+                        </button>
+                    </div>
+
+                    {{ formset.management_form }}
+                    <div class="table-responsive voucher-table-container custom-scrollbar" style="border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
+                        <table class="accounting-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 35%">Account Ledger</th>
+                                    <th style="width: 25%">Subledger Details</th>
+                                    <th style="width: 15%" class="text-end">Debit (DR)</th>
+                                    <th style="width: 15%" class="text-end">Credit (CR)</th>
+                                    <th style="width: 50px"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="entries-tbody">
+                                {% for entry_form in formset %}
+                                <tr class="entry-row" x-data="rowComponent({{ forloop.counter0 }})" x-init="initRow()" x-show="!deleted">
+                                    <td>
+                                        <div class="ledger-select-wrapper">
+                                            {{ entry_form.ledger }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div x-show="showSubledger" x-cloak x-transition>{{ entry_form.contact }}</div>
+                                        <div x-show="showEmployeeSubledger" x-cloak x-transition>{{ entry_form.employee }}</div>
+                                        <div x-show="!showSubledger && !showEmployeeSubledger" class="text-muted extra-small italic opacity-50 ps-2">Not required</div>
+                                    </td>
+                                    <td class="text-end">
+                                        <input type="number" name="{{ entry_form.debit.html_name }}" step="any" 
+                                               class="form-control-ws text-end numbers-font w-100 bg-light-focus border-transparent shadow-none" 
+                                               x-model.number="debit" @input="updateValues()" placeholder="0.00">
+                                    </td>
+                                    <td class="text-end">
+                                        <input type="number" name="{{ entry_form.credit.html_name }}" step="any" 
+                                               class="form-control-ws text-end numbers-font w-100 bg-light-focus border-transparent shadow-none" 
+                                               x-model.number="credit" @input="updateValues()" placeholder="0.00">
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" @click="remove()" class="btn btn-link text-danger p-0 opacity-50 hover-opacity-100 transition-all"><i class="bi bi-x-circle-fill"></i></button>
+                                        <div style="display:none">{{ entry_form.DELETE }}</div>
+                                        {% for hidden in entry_form.hidden_fields %}{{ hidden }}{% endfor %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+
+                                <!-- Extra template for new rows -->
+                                <template x-for="(row, idx) in extraRows" :key="row.timestamp">
+                                    <tr class="entry-row" x-data="rowComponent(row.index, true)" x-init="initRow()" x-show="!deleted">
+                                        <td x-html="row.ledgerHtml"></td>
+                                        <td>
+                                            <div x-show="showSubledger" x-cloak x-transition x-html="row.contactHtml"></div>
+                                            <div x-show="showEmployeeSubledger" x-cloak x-transition x-html="row.employeeHtml"></div>
+                                            <div x-show="!showSubledger && !showEmployeeSubledger" class="text-muted extra-small italic opacity-50 ps-2">Not required</div>
+                                        </td>
+                                        <td class="text-end">
+                                            <input type="number" :name="'entries-' + row.index + '-debit'" step="any" 
+                                                   class="form-control-ws text-end numbers-font w-100 bg-light-focus border-transparent shadow-none" 
+                                                   x-model.number="debit" @input="updateValues()" placeholder="0.00">
+                                        </td>
+                                        <td class="text-end">
+                                            <input type="number" :name="'entries-' + row.index + '-credit'" step="any" 
+                                                   class="form-control-ws text-end numbers-font w-100 bg-light-focus border-transparent shadow-none" 
+                                                   x-model.number="credit" @input="updateValues()" placeholder="0.00">
+                                        </td>
+                                        <td class="text-center">
+                                            <button type="button" @click="remove()" class="btn btn-link text-danger p-0 opacity-50 hover-opacity-100 transition-all"><i class="bi bi-x-circle-fill"></i></button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Raw HTML Templates for Cloning -->
+<div id="templates" style="display:none">
+    <div id="tpl-ledger">{{ formset.empty_form.ledger }}</div>
+    <div id="tpl-contact">{{ formset.empty_form.contact }}</div>
+    <div id="tpl-employee">{{ formset.empty_form.employee }}</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://nepalidatepicker.sajanmaharjan.com.np/v5/nepali.datepicker/js/nepali.datepicker.v5.0.6.min.js" type="text/javascript"></script>
+<script>
+    function voucherEngine() {
+        return {
+            vType: '{{ v_type|default:"Journal" }}',
+            adDate: '{% if voucher %}{{ voucher.date|date:"Y-m-d" }}{% else %}{{ form.date.value|date:"Y-m-d"|default:"" }}{% endif %}',
+            bsDate: '',
+            liquidityLedgers: JSON.parse('{{ liquidity_ledgers_json|safe|default:"[]" }}'),
+            arApLedgers: JSON.parse('{{ ar_ap_ledgers_json|safe|default:"[]" }}'),
+            payrollLedgers: JSON.parse('{{ payroll_ledgers_json|safe|default:"[]" }}'),
+            extraRows: [],
+            totalDebit: 0,
+            totalCredit: 0,
+            totalForms: parseInt(document.getElementById('id_entries-TOTAL_FORMS').value),
+            hasAnySubledgers: false,
+
+            initEngine() {
+                if (!this.adDate) {
+                    this.adDate = new Date().toISOString().split('T')[0];
+                }
+                this.waitForLibrary(() => {
+                    this.updateBSFromAD();
+                    this.initNepaliPicker();
+                    this.initBaseSelects();
+                    // Initial recalculate for edit mode
+                    setTimeout(() => this.globalRecalculate(), 200);
+                });
+                this.$watch('adDate', () => this.waitForLibrary(() => this.updateBSFromAD()));
+                this.$watch('vType', () => this.globalRecalculate());
+            },
+
+            get isSpecialized() {
+                return this.vType === 'Payment' || this.vType === 'Receipt';
+            },
+
+            get typeDescription() {
+                const descriptions = {
+                    'Journal': 'A standard double-entry journal (Dr/Cr) used for adjustments and regular accounting.',
+                    'Sales': 'Record sales revenue. Can track customer ledgers.',
+                    'Purchase': 'Record purchase bills. Can track supplier ledgers.',
+                    'Payment': 'Record outgoing cash or bank transfers. Select the source bank account below.',
+                    'Receipt': 'Record incoming cash or bank transfers. Select the receiving bank account below.',
+                    'Contra': 'Transfers between cash and bank accounts.'
+                };
+                return descriptions[this.vType] || 'Select the type of transaction you are recording.';
+            },
+
+            get isBalanced() {
+                return Math.abs(this.totalDebit - this.totalCredit) < 0.01 && this.totalDebit > 0;
+            },
+
+            initBaseSelects() {
+                document.querySelectorAll('#voucher-workspace select:not([name="voucher_type"]):not(#header_ledger_select)').forEach(sel => {
+                    this.setupTomSelect(sel);
+                });
+            },
+
+            setupTomSelect(el) {
+                if (!el || el.dataset.tsInit) return;
+                const ts = new TomSelect(el, {
+                    create: false,
+                    maxOptions: 500,
+                    placeholder: "Select Account...",
+                    dropdownParent: 'body',
+                    onChange: (val) => {
+                        el.value = val;
+                        // Trigger native change for Alpine @change listeners
+                        el.dispatchEvent(new Event('change', { bubbles: true }));
+                        this.globalRecalculate();
+                    }
+                });
+                el.dataset.tsInit = 'true';
+                return ts;
+            },
+
+            addRow() {
+                const index = this.totalForms;
+                const ledgerHtml = document.getElementById('tpl-ledger').innerHTML.replace(/__prefix__/g, index);
+                const contactHtml = document.getElementById('tpl-contact').innerHTML.replace(/__prefix__/g, index);
+                const employeeHtml = document.getElementById('tpl-employee').innerHTML.replace(/__prefix__/g, index);
+                
+                this.extraRows.push({
+                    timestamp: Date.now(),
+                    index: index,
+                    ledgerHtml: ledgerHtml,
+                    contactHtml: contactHtml,
+                    employeeHtml: employeeHtml
+                });
+                this.totalForms++;
+                document.getElementById('id_entries-TOTAL_FORMS').value = this.totalForms;
+            },
+
+            globalRecalculate() {
+                let dr = 0, cr = 0, subReq = false;
+                document.querySelectorAll('.entry-row').forEach(row => {
+                    const rowData = Alpine.$data(row);
+                    if (rowData && !rowData.deleted) {
+                        dr += parseFloat(rowData.debit) || 0;
+                        cr += parseFloat(rowData.credit) || 0;
+                        if (rowData.showSubledger) subReq = true;
+                    }
+                });
+
+                // Add header balance for specialized vouchers
+                const headerSel = document.getElementById('header_ledger_select');
+                if (headerSel && headerSel.value && this.isSpecialized) {
+                    const diff = dr - cr;
+                    if (this.vType === 'Payment' && diff > 0) cr += diff;
+                    else if (this.vType === 'Receipt' && diff < 0) dr += Math.abs(diff);
+                }
+
+                this.totalDebit = dr;
+                this.totalCredit = cr;
+                this.hasAnySubledgers = subReq || this.vType === 'Journal';
+            },
+
+            handleSubmit(e) {
+                if (!this.isBalanced) {
+                    e.preventDefault();
+                    alert("Voucher is not balanced.");
+                }
+            },
+
+            waitForLibrary(cb) {
+                if (typeof NepaliFunctions !== 'undefined') cb();
+                else setTimeout(() => this.waitForLibrary(cb), 100);
+            },
+            updateBSFromAD() {
+                const arr = this.adDate.split("-");
+                if (arr.length !== 3) return;
+                const bs = NepaliFunctions.AD2BS({ year: parseInt(arr[0]), month: parseInt(arr[1]), day: parseInt(arr[2]) });
+                this.bsDate = bs.year + "-" + String(bs.month).padStart(2,'0') + "-" + String(bs.day).padStart(2,'0');
+            },
+            updateADFromBS() {
+                const arr = this.bsDate.split("-");
+                const ad = NepaliFunctions.BS2AD({ year: parseInt(arr[0]), month: parseInt(arr[1]), day: parseInt(arr[2]) });
+                this.adDate = ad.year + "-" + String(ad.month).padStart(2,'0') + "-" + String(ad.day).padStart(2,'0');
+            },
+            initNepaliPicker() {
+                const el = document.getElementById("nepali-date-picker");
+                if (el) {
+                    el.nepaliDatePicker({
+                        onSelect: (data) => { this.bsDate = data.value; this.updateADFromBS(); }
+                    });
+                }
+            }
+        }
+    }
+
+    function rowComponent(index, isExtra = false) {
+        return {
+            index: index,
+            debit: 0,
+            credit: 0,
+            showSubledger: false,
+            showEmployeeSubledger: false,
+            deleted: false,
+
+            initRow() {
+                const engine = Alpine.$data(document.getElementById('voucher-workspace'));
+                this.$nextTick(() => {
+                    const selects = this.$el.querySelectorAll('select');
+                    selects.forEach(sel => {
+                        engine.setupTomSelect(sel);
+                        if (sel.name && sel.name.includes('ledger')) {
+                            // Attach event listener so programmatic TomSelect changes or native changes trigger the check
+                            sel.addEventListener('change', (e) => this.checkSubledger(e.target.value));
+                        }
+                    });
+                    const ledgerSel = this.$el.querySelector('select[name*="ledger"]');
+                    if (ledgerSel) this.checkSubledger(ledgerSel.value);
+                });
+                if (!isExtra) {
+                    const dEl = document.querySelector(`[name$="${index}-debit"]`);
+                    const cEl = document.querySelector(`[name$="${index}-credit"]`);
+                    if(dEl) this.debit = parseFloat(dEl.value) || 0;
+                    if(cEl) this.credit = parseFloat(cEl.value) || 0;
+                }
+            },
+
+            checkSubledger(payload) {
+                const val = (payload && payload.target) ? payload.target.value : payload;
+                if (!val) {
+                    this.showSubledger = false;
+                    return;
+                }
+                const engine = Alpine.$data(document.getElementById('voucher-workspace'));
+                this.showSubledger = engine.arApLedgers.includes(parseInt(val));
+                this.showEmployeeSubledger = engine.payrollLedgers.includes(parseInt(val));
+                engine.globalRecalculate();
+            },
+
+            updateValues() {
+                if (this.debit > 0) this.credit = 0;
+                if (this.credit > 0) this.debit = 0;
+                Alpine.$data(document.getElementById('voucher-workspace')).globalRecalculate();
+            },
+
+            remove() {
+                this.deleted = true;
+                const delInput = this.$el.querySelector(`input[name$="-DELETE"]`);
+                if (delInput) delInput.checked = true;
+                this.updateValues();
+            }
+        }
+    }
+</script>
+{% endblock %}

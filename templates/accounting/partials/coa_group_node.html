@@ -1,0 +1,94 @@
+{% load humanize %}
+<li class="coa-node-container mb-3">
+    <div class="coa-node bg-white rounded-4 p-3 shadow-sm mb-2 border border-light d-flex justify-content-between align-items-center hover-shadow-indigo transition-fast">
+        <div class="d-flex align-items-center">
+            <button class="btn btn-sm btn-light border-0 rounded-circle me-3 p-1 d-flex align-items-center justify-content-center" type="button" data-bs-toggle="collapse" data-bs-target="#group-{{ group.id }}" style="width: 28px; height: 28px;">
+                <i class="bi bi-chevron-down extra-small transition-transform"></i>
+            </button>
+            <span class="coa-code bg-indigo bg-opacity-10 text-indigo fw-bold px-2 py-1 rounded small me-3">{{ group.code }}</span>
+            <span class="coa-group fs-6 fw-bold text-dark brand-font">{{ group.name }}</span>
+            <span class="badge bg-light text-muted ms-2 fw-normal extra-small border">Group</span>
+        </div>
+        <div class="d-none d-md-flex gap-2 align-items-center">
+            <button class="btn btn-sm btn-light border-0 text-muted px-2 rounded-3" title="Add Sub-group"><i class="bi bi-folder-plus"></i></button>
+            <button class="btn btn-sm btn-light border-0 text-primary px-2 rounded-3" title="Add Ledger"><i class="bi bi-journal-plus"></i></button>
+            <form action="{% url 'accounting:coa_list' %}" method="post" class="d-inline border-start ps-2 ms-1" onsubmit="return confirm('Ensure this group is completely empty before deleting. Are you sure you want to delete this Account Group?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_group">
+                <input type="hidden" name="group_id" value="{{ group.id }}">
+                <button type="submit" class="btn btn-sm btn-light border-0 text-danger opacity-50 hover-opacity-100 px-2 rounded-3" title="Delete Group">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="collapse show" id="group-{{ group.id }}">
+        
+        <!-- Ledgers -->
+        {% if group.ledgers.exists %}
+        <ul class="list-unstyled ms-4 ps-4 border-start border-2 border-indigo border-opacity-10 mb-3 mt-2">
+            {% for ledger in group.ledgers.all %}
+            <li class="bg-white rounded-3 p-3 mb-2 d-flex justify-content-between align-items-center border border-light hover-border-indigo transition-fast">
+                <div class="d-flex align-items-center">
+                    <div class="p-2 bg-light rounded-3 me-3 text-muted">
+                        <i class="bi bi-file-earmark-text small"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="coa-code bg-light text-secondary fw-bold px-2 py-0.5 rounded extra-small border">{{ ledger.code }}</span>
+                            <span class="coa-ledger text-dark small fw-bold">{{ ledger.name }}</span>
+                            <a href="{% url 'accounting:ledger_statement_detail' ledger.id %}" class="text-primary opacity-50 hover-opacity-100 ms-1" title="View Statement">
+                                <i class="bi bi-journal-text small"></i>
+                            </a>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-light text-muted fw-normal extra-small border-0 shadow-none" style="font-size: 0.65rem;">{{ ledger.account_type }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-4">
+                    <!-- Sub-ledger Config -->
+                    <form action="{% url 'accounting:ledger_edit_basic' ledger.pk %}" method="post" class="d-flex align-items-center">
+                        {% csrf_token %}
+                        <div class="input-group input-group-sm bg-light rounded-pill px-2 border-0">
+                            <select name="subledger_type" class="form-select border-0 bg-transparent text-muted extra-small p-1" onchange="this.form.submit()" style="width: auto; cursor: pointer; min-width: 120px; box-shadow: none;">
+                                <option value="None" {% if ledger.subledger_type == 'None' %}selected{% endif %}>No Link</option>
+                                <option value="Contact" {% if ledger.subledger_type == 'Contact' %}selected{% endif %}>👤 Contact</option>
+                                <option value="Employee" {% if ledger.subledger_type == 'Employee' %}selected{% endif %}>👷 Employee</option>
+                            </select>
+                        </div>
+                    </form>
+
+                    <div class="coa-balance text-end" style="min-width: 140px;">
+                        <span class="numbers-font {% if ledger.current_balance > 0 %}text-success{% elif ledger.current_balance < 0 %}text-danger{% else %}text-muted{% endif %} fw-bold">
+                            NPR {{ ledger.current_balance|floatformat:2|intcomma }}
+                        </span>
+                        <div class="extra-small text-muted opacity-50 text-uppercase letter-spacing-1" style="font-size: 0.6rem;">Balance</div>
+                    </div>
+                    
+                    <form action="{% url 'accounting:coa_list' %}" method="post" class="d-inline ms-2 border-start ps-3" onsubmit="return confirm('Are you sure you want to delete this Ledger? Only ledgers with 0 transactions can be deleted.');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="delete_ledger">
+                        <input type="hidden" name="ledger_id" value="{{ ledger.id }}">
+                        <button type="submit" class="btn btn-sm p-1 border-0 text-danger opacity-25 hover-opacity-100 transition-fast" title="Delete Ledger">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        <!-- Recursive Subgroups -->
+        {% if group.subgroups.exists %}
+        <ul class="list-unstyled ms-4 ps-2 mt-2">
+            {% for subgroup in group.subgroups.all %}
+                {% include 'accounting/partials/coa_group_node.html' with group=subgroup %}
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+</li>

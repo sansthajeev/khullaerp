@@ -1,0 +1,170 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block title %}{{ item.name }} - Item Detail{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header with Action Buttons -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="{% url 'inventory:item_list' %}">Inventory</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ item.sku }}</li>
+                </ol>
+            </nav>
+            <h2 class="h3 mb-0 font-weight-bold text-dark">{{ item.name }}</h2>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'inventory:item_edit' item.pk %}" class="btn btn-outline-primary shadow-sm bg-white">
+                <i class="fas fa-edit me-1"></i> Edit Item
+            </a>
+            <a href="{% url 'inventory:item_ledger' item.pk %}" class="btn btn-outline-info shadow-sm bg-white">
+                <i class="fas fa-list-ul me-1"></i> View Ledger
+            </a>
+            <button onclick="window.print()" class="btn btn-dark shadow-sm">
+                <i class="fas fa-print me-1"></i> Print Label
+            </button>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Main Info Card -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-light">
+                    <h5 class="card-title mb-0 font-weight-bold">Item Specifications</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small text-uppercase fw-bold">SKU / Code</label>
+                            <p class="h5 fw-normal text-dark">{{ item.sku }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small text-uppercase fw-bold">Item Type</label>
+                            <p class="h5 fw-normal text-dark">{{ item.get_item_type_display }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small text-uppercase fw-bold">Unit of Measurement</label>
+                            <p class="h5 fw-normal text-dark">{{ item.uom.name }} ({{ item.uom.short_name }})</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small text-uppercase fw-bold">Valuation Method</label>
+                            <p class="h5 fw-normal text-dark">{{ item.valuation_method }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 border-light">
+                    <h5 class="card-title mb-0 font-weight-bold">Financial Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded-3">
+                                <label class="text-muted small text-uppercase fw-bold mb-1">Sales Price</label>
+                                <p class="h4 text-success mb-0 fw-bold">Rs. {{ item.sales_price }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded-3">
+                                <label class="text-muted small text-uppercase fw-bold mb-1">Purchase Price</label>
+                                <p class="h4 text-danger mb-0 fw-bold">Rs. {{ item.purchase_price }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small text-uppercase fw-bold">Tax Status</label>
+                            <p class="mb-0">
+                                {% if item.is_taxable %}
+                                    <span class="badge bg-soft-success text-success px-3 py-2 border border-success border-opacity-25">Taxable ({{ item.tax_rate }}%)</span>
+                                {% else %}
+                                    <span class="badge bg-soft-secondary text-secondary px-3 py-2 border border-secondary border-opacity-25">Non-Taxable</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small text-uppercase fw-bold">Margins</label>
+                            {% with margin=item.sales_price|add:item.purchase_price|floatformat:2 %}
+                            <p class="h5 fw-normal text-dark">
+                                {% widthratio item.sales_price|add:"-1"|add:item.purchase_price item.sales_price 100 as margin_pct %}
+                                Profit Margin: {{ item.sales_price|add:"-item.purchase_price" }} 
+                            </p>
+                            {% endwith %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar / Codes Card -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm bg-primary text-white mb-4">
+                <div class="card-body p-4 text-center">
+                    <label class="text-white-50 small text-uppercase fw-bold mb-1">Current Stock</label>
+                    <h3 class="display-5 fw-bold mb-0">{{ item.current_stock }}</h3>
+                    <p class="mb-3">{{ item.uom.short_name }} available</p>
+                    <a href="{% url 'inventory:adjustment_create' %}?item={{ item.pk }}" class="btn btn-light btn-sm px-4 rounded-pill fw-bold">
+                        Adjust Stock
+                    </a>
+                </div>
+            </div>
+
+            <!-- Barcode & QR Code Section -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 border-light d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0 font-weight-bold">Product Codes</h5>
+                    <button class="btn btn-link btn-sm text-decoration-none p-0" onclick="window.print()">
+                        <i class="fas fa-external-link-alt"></i>
+                    </button>
+                </div>
+                <div class="card-body p-4">
+                    <div class="text-center mb-5 print-section">
+                        <label class="text-muted small text-uppercase fw-bold mb-3 d-block">Barcode (Code128)</label>
+                        <div class="barcode-container p-3 bg-white border rounded d-inline-block">
+                            <img src="data:image/png;base64,{{ barcode }}" alt="Barcode" class="img-fluid" style="max-height: 80px;">
+                            <div class="mt-2 font-monospace small text-dark">
+                                {% if item.barcode %}
+                                    {{ item.barcode }} <span class="text-muted">(Custom)</span>
+                                {% else %}
+                                    {{ item.sku }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center print-section">
+                        <label class="text-muted small text-uppercase fw-bold mb-3 d-block">QR Code</label>
+                        <div class="qr-container p-3 bg-white border rounded d-inline-block">
+                            <div style="width: 150px; height: 150px;">
+                                {{ qr_code|safe }}
+                            </div>
+                        </div>
+                        <p class="mt-2 text-muted small">Scan to identify in POS</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-soft-success { background-color: rgba(25, 135, 84, 0.1); }
+    .bg-soft-secondary { background-color: rgba(108, 117, 125, 0.1); }
+    
+    @media print {
+        body * { visibility: hidden; }
+        .print-section, .print-section * { visibility: visible; }
+        .print-section { position: absolute; left: 0; top: 0; width: 100%; text-align: center; }
+        .card { border: none !important; box-shadow: none !important; }
+        .btn, nav, .card-header { display: none !important; }
+    }
+
+    /* Premium touch */
+    .card { transition: transform 0.2s ease; }
+    .card:hover { transform: translateY(-2px); }
+</style>
+{% endblock %}

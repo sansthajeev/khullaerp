@@ -1,0 +1,144 @@
+{% extends 'admin/base.html' %}
+{% load humanize %}
+
+{% block title %}Payroll Run {{ payroll_run.run_number }} | Neponbiz{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid py-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <h3 class="fw-bold mb-0">Payroll Run: {{ payroll_run.run_number }}</h3>
+                {% if payroll_run.status == 'Draft' %}
+                    <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-1 rounded-pill">Draft</span>
+                {% else %}
+                    <span class="badge bg-success bg-opacity-10 text-success px-3 py-1 rounded-pill">Finalized</span>
+                {% endif %}
+            </div>
+            <p class="text-muted small mb-0">For Month: {{ payroll_run.month|date:"F Y" }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'hr:payroll_list' %}" class="btn btn-light shadow-sm">
+                <i class="bi bi-arrow-left me-1"></i> Back
+            </a>
+            {% if payroll_run.status == 'Draft' %}
+                <form action="{% url 'hr:payroll_finalize' payroll_run.pk %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success px-4 shadow-sm fw-bold">
+                        <i class="bi bi-check2-circle me-1"></i> Finalize & Post Voucher
+                    </button>
+                </form>
+                <a href="{% url 'hr:payroll_delete' payroll_run.pk %}" class="btn btn-outline-danger">
+                    <i class="bi bi-trash"></i>
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Summary Cards -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4 text-center">
+                    <div class="text-muted small text-uppercase fw-bold mb-2">Total Gross</div>
+                    <h3 class="fw-bold mb-0 text-dark">NPR {{ payroll_run.total_gross|intcomma }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4 text-center">
+                    <div class="text-muted small text-uppercase fw-bold mb-2">Total SST (1%)</div>
+                    <h3 class="fw-bold mb-0 text-danger">NPR {{ payroll_run.total_sst|intcomma }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4 text-center">
+                    <div class="text-muted small text-uppercase fw-bold mb-2">Total Income Tax</div>
+                    <h3 class="fw-bold mb-0 text-danger">NPR {{ payroll_run.total_it|intcomma }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4 text-center text-primary border-primary border-2">
+                    <div class="text-muted small text-uppercase fw-bold mb-2 text-primary opacity-75">Net Payout</div>
+                    <h3 class="fw-bold mb-0">NPR {{ payroll_run.total_net|intcomma }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Details -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0">Employee Breakdown</h6>
+                    <span class="badge bg-light text-dark fw-normal border">Calendar: {{ payroll_run.get_calendar_type_display }}</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4 border-0">Employee</th>
+                                <th class="border-0 text-end">Basic</th>
+                                <th class="border-0 text-end">Gross</th>
+                                <th class="border-0 text-end">SST 1%</th>
+                                <th class="border-0 text-end">Inc. Tax</th>
+                                <th class="border-0 text-end">Total TDS</th>
+                                <th class="pe-4 border-0 text-end">Net Payable</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in payroll_run.entries.all %}
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="fw-bold">{{ entry.employee.name }}</div>
+                                    <div class="extra-small text-muted">{{ entry.employee.employee_id }}</div>
+                                </td>
+                                <td class="text-end">{{ entry.basic_salary|intcomma }}</td>
+                                <td class="text-end fw-medium">{{ entry.gross_salary|intcomma }}</td>
+                                <td class="text-end text-danger">{{ entry.sst_amount|intcomma }}</td>
+                                <td class="text-end text-danger">{{ entry.it_amount|intcomma }}</td>
+                                <td class="text-end text-danger fw-medium">{{ entry.total_tds|intcomma }}</td>
+                                <td class="pe-4 text-end fw-bold text-dark">{{ entry.net_payable|intcomma }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold mb-3">Accounting References</h6>
+                    <div class="mb-3">
+                        <label class="text-muted extra-small d-block">SALARY EXPENSE ACCOUNT</label>
+                        <div class="fw-medium">{{ payroll_run.salary_expense_ledger.name }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted extra-small d-block">TDS PAYABLE ACCOUNT</label>
+                        <div class="fw-medium">{{ payroll_run.tds_payable_ledger.name }}</div>
+                    </div>
+                    <div>
+                        <label class="text-muted extra-small d-block">PAYMENT VIA</label>
+                        <div class="fw-medium">{{ payroll_run.payment_ledger.name }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if payroll_run.notes %}
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold mb-2">Notes</h6>
+                    <p class="text-muted small mb-0">{{ payroll_run.notes }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

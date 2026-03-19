@@ -1,0 +1,47 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Revert Adjustment | ERP Neponbiz{% endblock %}
+
+{% block admin_content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-danger text-white py-3 px-4">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-arrow-counterclockwise me-2"></i> Confirm Adjustment Reversal</h5>
+                </div>
+                <div class="card-body p-4 p-lg-5">
+                    <p class="lead mb-4">Are you sure you want to revert and delete this stock adjustment?</p>
+                    
+                    <div class="bg-light p-3 rounded-3 mb-4">
+                        <ul class="list-unstyled mb-0 small">
+                            <li><strong>Item:</strong> {{ adjustment.item.name }}</li>
+                            <li><strong>Type:</strong> {{ adjustment.adjustment_type }}</li>
+                            <li><strong>Quantity:</strong> {{ adjustment.quantity }}</li>
+                            <li><strong>Date:</strong> {{ adjustment.date|date:"Y-m-d H:i" }}</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-warning border-0 small mb-4">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <strong>Important:</strong> Reverting this adjustment will automatically recalculate the <code>Current Stock</code> for <strong>{{ adjustment.item.name }}</strong>. 
+                        {% if adjustment.adjustment_type == 'Addition' %}
+                            This will <strong>decrease</strong> the stock by {{ adjustment.quantity }}.
+                        {% else %}
+                            This will <strong>increase</strong> the stock by {{ adjustment.quantity }}.
+                        {% endif %}
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-danger px-4 py-2 fw-bold flex-grow-1">Yes, Revert & Delete</button>
+                            <a href="{% url 'inventory:adjustment_list' %}" class="btn btn-outline-secondary px-4 py-2 fw-bold">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

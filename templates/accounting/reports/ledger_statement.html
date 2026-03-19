@@ -1,0 +1,261 @@
+{% extends 'admin/base.html' %}
+{% load django_bootstrap5 %}
+{% load nepali_dates %}
+{% load humanize %}
+
+{% block title %}Ledger Statement | ERP Neponbiz{% endblock %}
+
+{% block admin_extra_css %}
+<link href="https://nepalidatepicker.sajanmaharjan.com.np/v5/nepali.datepicker/css/nepali.datepicker.v5.0.6.min.css" rel="stylesheet" type="text/css"/>
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<style>
+    .statement-card {
+        background: white;
+        border-radius: var(--radius-premium);
+        box-shadow: 0 4px 20px -5px rgba(0,0,0,0.05);
+        padding: 2.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border-color);
+    }
+    .report-table th {
+        background: #f8fafc;
+        padding: 12px 16px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+        border-bottom: 2px solid #f1f5f9;
+        font-family: 'Outfit', sans-serif;
+    }
+    .report-table td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.85rem;
+        vertical-align: middle;
+    }
+    .balance-badge {
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 0.25rem 0.6rem;
+        border-radius: 6px;
+        text-transform: uppercase;
+    }
+    .ts-control {
+        border-radius: 10px !important;
+        padding: 0.5rem 0.75rem !important;
+        border: 1px solid var(--border-color) !important;
+        box-shadow: none !important;
+    }
+    [x-cloak] { display: none !important; }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid px-4" x-data="reportFilter()" x-init="init()">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-1 brand-font">Ledger Statement</h4>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'users:dashboard' %}" class="text-decoration-none text-primary opacity-75">Finance</a></li>
+                    <li class="breadcrumb-item active text-muted" aria-current="page">General Ledger</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-sm btn-light border px-3">
+                <i class="bi bi-printer me-1"></i> Print
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5 p-4" style="background: rgba(255,255,255,0.6); backdrop-filter: blur(10px);">
+        <form method="get" id="filterForm" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label extra-small fw-bold text-muted text-uppercase">Account / Ledger</label>
+                <select name="ledger" id="ledgerSelect" class="form-select" required>
+                    <option value="">Select Ledger...</option>
+                    {% for l in ledgers %}
+                    <option value="{{ l.id }}" {% if selected_ledger.id == l.id %}selected{% endif %}>{{ l.code }} - {{ l.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label extra-small fw-bold text-muted text-uppercase">From Date (BS)</label>
+                <input type="text" name="from_date_bs" id="picker_from_bs" class="form-control form-control-sm bg-white" x-model="from_bs" readonly>
+                <input type="hidden" name="from_date_ad" x-model="from_ad">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label extra-small fw-bold text-muted text-uppercase">To Date (BS)</label>
+                <input type="text" name="to_date_bs" id="picker_to_bs" class="form-control form-control-sm bg-white" x-model="to_bs" readonly>
+                <input type="hidden" name="to_date_ad" x-model="to_ad">
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-premium-primary w-100 py-2">
+                    <i class="bi bi-funnel-fill me-2"></i> View Statement
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {% if selected_ledger %}
+    <div class="statement-card">
+        <div class="row align-items-center mb-5">
+            <div class="col-md-6 text-center text-md-start">
+                <h3 class="fw-bold brand-font mb-0">{{ selected_ledger.name }}</h3>
+                <div class="text-muted small">Account Code: <strong>{{ selected_ledger.code }}</strong> | Type: {{ selected_ledger.account_type }}</div>
+            </div>
+            <div class="col-md-6 text-center text-md-end mt-3 mt-md-0">
+                <div class="extra-small text-muted text-uppercase fw-bold letter-spacing-1 mb-1">Statement Period</div>
+                <div class="h6 mb-0">{{ from_date|date:"M d, Y" }} — {{ to_date|date:"M d, Y" }}</div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table report-table">
+                <thead>
+                    <tr>
+                        <th style="width: 12%">Date</th>
+                        <th style="width: 12%">Voucher #</th>
+                        <th style="width: 34%">Particulars / Narration</th>
+                        <th style="width: 14%" class="text-end">Debit (Dr)</th>
+                        <th style="width: 14%" class="text-end">Credit (Cr)</th>
+                        <th style="width: 14%" class="text-end">Balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="bg-light bg-opacity-50">
+                        <td colspan="3" class="fw-bold text-center text-uppercase letter-spacing-1 small py-3">Opening Balance</td>
+                        <td colspan="2"></td>
+                        <td class="text-end numbers-font fw-bold">
+                            {{ opening_balance|floatformat:2|intcomma }}
+                            <span class="balance-badge {% if opening_balance >= 0 %}bg-success bg-opacity-10 text-success{% else %}bg-danger bg-opacity-10 text-danger{% endif %} ms-1">
+                                {% if opening_balance >= 0 %}Dr{% else %}Cr{% endif %}
+                            </span>
+                        </td>
+                    </tr>
+
+                    {% for row in statement_data %}
+                    <tr>
+                        <td class="numbers-font text-muted">{{ row.date|date:"Y-m-d" }}</td>
+                        <td>
+                            <a href="{% url 'accounting:voucher_detail' row.voucher_id %}" class="text-decoration-none fw-bold text-primary">
+                                {{ row.voucher_number }}
+                            </a>
+                        </td>
+                        <td class="text-muted small">{{ row.narration }}</td>
+                        <td class="text-end numbers-font">{% if row.debit > 0 %}{{ row.debit|floatformat:2|intcomma }}{% else %}-{% endif %}</td>
+                        <td class="text-end numbers-font">{% if row.credit > 0 %}{{ row.credit|floatformat:2|intcomma }}{% else %}-{% endif %}</td>
+                        <td class="text-end numbers-font fw-medium">
+                            {{ row.balance|abs_val|floatformat:2|intcomma }}
+                            <span class="extra-small opacity-50 ms-1">{% if row.balance >= 0 %}Dr{% else %}Cr{% endif %}</span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted small">No transactions found for this period.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="border-top-2">
+                    <tr class="fw-bold bg-light bg-opacity-50">
+                        <td colspan="3" class="text-center text-uppercase letter-spacing-1 small py-3">Closing Balance</td>
+                        <td class="text-end numbers-font" id="overall_debit"></td>
+                        <td class="text-end numbers-font" id="overall_credit"></td>
+                        <td class="text-end numbers-font h5 mb-0">
+                            {{ closing_balance|abs_val|floatformat:2|intcomma }}
+                            <span class="balance-badge {% if closing_balance >= 0 %}bg-success text-success{% else %}bg-danger text-danger{% endif %} ms-1">
+                                {% if closing_balance >= 0 %}Dr{% else %}Cr{% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-5 statement-card">
+        <div class="brand-logo mx-auto mb-4 opacity-10" style="width: 100px; height: 100px;">
+            <i class="bi bi-journal-text" style="font-size: 3rem;"></i>
+        </div>
+        <h5 class="fw-bold">Select a Ledger to View Statement</h5>
+        <p class="text-muted">Choose an account from the dropdown above to continue.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://nepalidatepicker.sajanmaharjan.com.np/v5/nepali.datepicker/js/nepali.datepicker.v5.0.6.min.js" type="text/javascript"></script>
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+<script>
+    function reportFilter() {
+        return {
+            from_ad: '{{ from_date|date:"Y-m-d" }}',
+            to_ad: '{{ to_date|date:"Y-m-d" }}',
+            from_bs: '',
+            to_bs: '',
+
+            init() {
+                this.waitForLibrary(() => {
+                    this.updateBSFromAD();
+                    this.initPickers();
+                    new TomSelect("#ledgerSelect", {
+                        create: false,
+                        sortField: { field: "text", direction: "asc" }
+                    });
+                });
+            },
+
+            waitForLibrary(cb) {
+                if (typeof NepaliFunctions !== 'undefined') cb();
+                else setTimeout(() => this.waitForLibrary(cb), 100);
+            },
+
+            updateBSFromAD() {
+                const f_arr = this.from_ad.split("-");
+                if (f_arr.length === 3) {
+                    const bs = NepaliFunctions.AD2BS({ year: parseInt(f_arr[0]), month: parseInt(f_arr[1]), day: parseInt(f_arr[2]) });
+                    this.from_bs = bs.year + "-" + String(bs.month).padStart(2,'0') + "-" + String(bs.day).padStart(2,'0');
+                }
+                const t_arr = this.to_ad.split("-");
+                if (t_arr.length === 3) {
+                    const bs = NepaliFunctions.AD2BS({ year: parseInt(t_arr[0]), month: parseInt(t_arr[1]), day: parseInt(t_arr[2]) });
+                    this.to_bs = bs.year + "-" + String(bs.month).padStart(2,'0') + "-" + String(bs.day).padStart(2,'0');
+                }
+            },
+
+            updateADFromBS() {
+                if (this.from_bs) {
+                    const f = this.from_bs.split("-");
+                    const ad = NepaliFunctions.BS2AD({ year: parseInt(f[0]), month: parseInt(f[1]), day: parseInt(f[2]) });
+                    this.from_ad = ad.year + "-" + String(ad.month).padStart(2,'0') + "-" + String(ad.day).padStart(2,'0');
+                }
+                if (this.to_bs) {
+                    const t = this.to_bs.split("-");
+                    const ad = NepaliFunctions.BS2AD({ year: parseInt(t[0]), month: parseInt(t[1]), day: parseInt(t[2]) });
+                    this.to_ad = ad.year + "-" + String(ad.month).padStart(2,'0') + "-" + String(ad.day).padStart(2,'0');
+                }
+            },
+
+            initPickers() {
+                const fromEl = document.getElementById("picker_from_bs");
+                if (fromEl) {
+                    fromEl.nepaliDatePicker({
+                        onSelect: (data) => { this.from_bs = data.value; this.updateADFromBS(); }
+                    });
+                }
+                const toEl = document.getElementById("picker_to_bs");
+                if (toEl) {
+                    toEl.nepaliDatePicker({
+                        onSelect: (data) => { this.to_bs = data.value; this.updateADFromBS(); }
+                    });
+                }
+            }
+        }
+    }
+</script>
+{% endblock %}
