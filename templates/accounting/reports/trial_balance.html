@@ -3,7 +3,7 @@
 {% load nepali_dates %}
 {% load humanize %}
 
-{% block title %}Trial Balance | ERP Neponbiz{% endblock %}
+{% block title %}Trial Balance | ERP Khullaerp{% endblock %}
 
 {% block admin_extra_css %}
 <link href="https://nepalidatepicker.sajanmaharjan.com.np/v5/nepali.datepicker/css/nepali.datepicker.v5.0.6.min.css" rel="stylesheet" type="text/css"/>
@@ -89,7 +89,7 @@
 
     <div class="report-card">
         <div class="text-center mb-5">
-            <h5 class="fw-bold mb-0">{{ request.tenant.name|default:"ERP NEPONBIZ" }}</h5>
+            <h5 class="fw-bold mb-0">{{ request.tenant.name|default:"ERP KHULLAERP" }}</h5>
             <div class="text-muted small">Periodic Trial Balance</div>
             <div class="extra-small text-muted opacity-75 mt-1">Period: {{ from_date|date:"M d, Y" }} — {{ to_date|date:"M d, Y" }}</div>
         </div>

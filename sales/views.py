@@ -247,7 +247,7 @@ def export_invoice_pdf(request, pk):
 
     # 1. Header & Brand Section
     header_data = [
-        [Paragraph("Neponbiz ERP", title_style), Paragraph(f"INVOICE", ParagraphStyle('InvLabel', parent=styles['Heading1'], fontSize=24, textColor=colors.grey, alignment=2))],
+        [Paragraph("Khullaerp", title_style), Paragraph(f"INVOICE", ParagraphStyle('InvLabel', parent=styles['Heading1'], fontSize=24, textColor=colors.grey, alignment=2))],
         [Paragraph("Digital Solution for Modern Business", ParagraphStyle('Sub', parent=styles['Normal'], fontSize=9, textColor=colors.grey)), Paragraph(f"#{invoice.invoice_number}", ParagraphStyle('InvNum', parent=styles['Normal'], fontSize=14, fontWeight='Bold', alignment=2, textColor=colors.HexColor("#4f46e5")))]
     ]
     t_header = Table(header_data, colWidths=[3.5*inch, 3.5*inch])

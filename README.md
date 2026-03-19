@@ -1,6 +1,6 @@
-# Neponbiz ERP
+# Khullaerp
 
-Neponbiz ERP is a modern, responsive, multi-tenant Enterprise Resource Planning system built with Django. It provides comprehensive tools tailored for businesses in Nepal, including financial accounting, voucher management, human resources, inventory tracking, and sales operations.
+Khullaerp is a modern, responsive, multi-tenant Enterprise Resource Planning system built with Django. It provides comprehensive tools tailored for businesses in Nepal, including financial accounting, voucher management, human resources, inventory tracking, and sales operations.
 
 ## Features
 
@@ -31,8 +31,8 @@ Neponbiz ERP is a modern, responsive, multi-tenant Enterprise Resource Planning 
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/erp_neponbiz.git
-   cd erp_neponbiz
+   git clone https://github.com/yourusername/khullaerp.git
+   cd khullaerp
    ```
 
 2. **Set up a Virtual Environment:**

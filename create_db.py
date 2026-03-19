@@ -9,14 +9,14 @@ def create_database():
         cur = con.cursor()
         
         # Check if database exists
-        cur.execute("SELECT 1 FROM pg_catalog.pg_database WHERE datname = 'erp_neponbiz'")
+        cur.execute("SELECT 1 FROM pg_catalog.pg_database WHERE datname = 'khullaerp'")
         exists = cur.fetchone()
         
         if not exists:
-            cur.execute('CREATE DATABASE erp_neponbiz')
-            print("Database 'erp_neponbiz' created successfully.")
+            cur.execute('CREATE DATABASE khullaerp')
+            print("Database 'khullaerp' created successfully.")
         else:
-            print("Database 'erp_neponbiz' already exists.")
+            print("Database 'khullaerp' already exists.")
             
         cur.close()
         con.close()
